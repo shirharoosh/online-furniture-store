@@ -24,7 +24,7 @@ class ShoppingCart:
         item = self.inventory.items[item_id]
 
         if item.quantity < quantity:
-            print(f"Not enough stock available for {item.item_title}. Only {item.quantity} left.")
+            print(f"Not enough stock available for {item.title}. Only {item.quantity} left.")
             return
         
         #Add item to cart
@@ -34,7 +34,7 @@ class ShoppingCart:
         #Update inventory stock
         self.inventory.update_quantity(item_id, item.quantity - quantity)
 
-        print(f"Added {quantity}x {item.item_title} to cart. Total: ${self.total_price:.2f}")
+        print(f"Added {quantity}x {item.title} to cart. Total: ${self.total_price:.2f}")
 
     def remove_item(self, item_id: int, quantity: int = 1) -> None:
         """
@@ -60,7 +60,7 @@ class ShoppingCart:
         #Restore quantity back to store inventory
         self.inventory.update_quantity(item_id, item.quantity + quantity)
 
-        print(f"Removed {quantity}x {item.item_title} from cart. Total: ${self.total_price:.2f}")
+        print(f"Removed {quantity}x {item.title} from cart. Total: ${self.total_price:.2f}")
 
     def apply_discount(self, discount_percentage: float) -> None:
         """
@@ -86,7 +86,7 @@ class ShoppingCart:
         print("\nShopping Cart:")
         for item_id, quantity in self.cart_items.items():
             item = self.inventory.items[item_id]
-            print(f"- {item.item_title}: {quantity} @ ${item.price:.2f} each")
+            print(f"- {item.title}: {quantity} @ ${item.price:.2f} each")
         print(f"Total Price: ${self.total_price:.2f}")
 
 
@@ -95,4 +95,3 @@ class ShoppingCart:
         Returns the current total price of items in the cart.
         """
         print(f"Total price for your cart before discounts: ${self.total_price:.2f}")
-
