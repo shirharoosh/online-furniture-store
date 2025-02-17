@@ -1,3 +1,4 @@
+from store_item import StoreItem
 class Inventory:
     def __init__(self):
         self.items = {}  # Dictionary with item_id as keys and StoreItem objects as values
