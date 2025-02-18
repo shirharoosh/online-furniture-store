@@ -3,6 +3,7 @@ from shopping_cart import ShoppingCart
 from user import User
 from order import Order
 from user_order_dic import UserOrderDictionary
+from store_item import Table, Chair, Sofa
 
 # Global shared resources (Simulated database)
 global_inventory = Inventory()  # Shared inventory across users
@@ -10,35 +11,38 @@ global_user_orders = UserOrderDictionary()  # Stores orders for all users
 user_accounts = {}  # Simulated user database (email -> User object)
 shopping_carts = {}  # Stores active carts per user
 
+# Predefined catalog of furniture items (will be added to inventory)
+catalog = {
+    101: Table(101, "Dining Table", 250, 75, 150, 30, "A sturdy wooden dining table."),
+    102: Chair(102, "Office Chair", 80, 100, 50, 10, "An ergonomic office chair.", material="Leather"),
+    103: Sofa(103, "Luxury Sofa", 500, 40, 200, 50, "A comfortable luxury sofa.", seating_capacity=3)
+}
+
 
 def initialize_inventory():
-    """Populates the inventory with initial stock."""
-    global_inventory.add_item(101, 10)  # 10 Dining Tables
-    global_inventory.add_item(102, 15)  # 15 Office Chairs
-    global_inventory.add_item(103, 5)  # 5 Sofas
+    """Populates the inventory with initial stock using predefined catalog items."""
+    for item_id in catalog:
+        quantity = 10  # Set initial stock for each item
+        global_inventory.add_item(item_id, quantity)
     print("Inventory initialized!")
 
 
-def sign_up():
-    """Handles user sign-up using User.sign_up()."""
-    print("\nSign Up")
-    email = input("Enter email: ").strip()
-    if email in user_accounts:
-        print("User already exists. Please log in.")
-        return None
+def initialize_users():
+    """Creates three pre-generated users to allow easy login."""
+    pre_generated_users = [
+        ("alice@example.com", "Alice123", "Alice", "Alice Wonderland", "456 Elm St", "123456789"),
+        ("bob@example.com", "Bob456", "Bob", "Bob Builder", "789 Oak St", "987654321"),
+        ("charlie@example.com", "Charlie789", "Charlie", "Charlie Brown", "321 Pine St", "555555555")
+    ]
 
-    username = input("Enter username: ").strip()
-    password = input("Enter password: ").strip()
-    full_name = input("Enter full name: ").strip()
-    address = input("Enter address: ").strip()
-    phone_number = input("Enter phone number: ").strip()
+    for email, password, username, full_name, address, phone_number in pre_generated_users:
+        new_user = User(username, full_name, email, password, address, phone_number)
+        user_accounts[email] = new_user
+        shopping_carts[email] = ShoppingCart(global_inventory)
 
-    new_user = User(username, full_name, email, password, address, phone_number)
-    print(new_user.sign_up())  # Use existing function
-
-    user_accounts[email] = new_user
-    shopping_carts[email] = ShoppingCart(global_inventory)  # Create a new cart for this user
-    return new_user
+    print("Users initialized! You can log in with:")
+    for email, password, username, _, _, _ in pre_generated_users:
+        print(f"Username: {username}, Email: {email}, Password: {password}")
 
 
 def log_in():
@@ -63,7 +67,7 @@ def log_in():
 
 def user_interface(user):
     """Allows the user to interact with their shopping cart."""
-    cart = shopping_carts[user.email]  # Retrieve or create the user's cart
+    cart = shopping_carts[user.email]  # Retrieve the user's cart
 
     while True:
         print("\nShopping Cart Menu:")
@@ -140,7 +144,6 @@ def checkout(user, cart):
 
     # Create the order and update the user's order history
     order = Order(user, list(cart._cart_items.keys()), cart._total_price, status="Pending")
-    #TODO - update the status through API
     global_user_orders.update(order)
 
     # Clear the shopping cart after a successful checkout
@@ -157,14 +160,14 @@ def process_payment(amount, payment_method):
 
 
 def main():
-    """Main function to initialize inventory and handle user login/signup."""
+    """Main function to initialize inventory, create test users, and handle user login/signup."""
     initialize_inventory()
+    initialize_users()  # Generate 3 users for easy login
 
     while True:
         print("\nWelcome to the Online Furniture Store!")
         print("1. Log In")
-        print("2. Sign Up")
-        print("3. Exit")
+        print("2. Exit")
 
         choice = input("Choose an option: ").strip()
 
@@ -174,11 +177,6 @@ def main():
                 user_interface(user)
 
         elif choice == "2":
-            user = sign_up()
-            if user:
-                user_interface(user)
-
-        elif choice == "3":
             print("Exiting the application. Goodbye!")
             break
 
