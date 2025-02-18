@@ -1,97 +1,106 @@
-from collections import defaultdict
 from typing import Dict
 from inventory import Inventory
 from store_item import StoreItem
 
+
 class ShoppingCart:
+    """
+    Manages a shopping cart for users.
+    - Uses a dictionary: {item_id: quantity}
+    - Keeps track of total price dynamically.
+    - Does NOT modify inventory until checkout.
+    """
+
     def __init__(self, inventory: Inventory) -> None:
         """
-        Initialize a shopping cart with reference to inventory.
+        Initializes the shopping cart.
+        - Links to inventory for stock verification.
+        - Uses a dictionary to store cart items (item_id -> quantity).
+        - Tracks total cart price.
         """
-        self.inventory = inventory #link to store's inventory
-        self.cart_items: Dict[int, int] = defaultdict(int) #stores item_id -> quantity
-        self.total_price: float = 0.0
-        self.discount: float = 0.0
+        self._inventory = inventory  # Reference to store inventory
+        self._cart_items: Dict[int, int] = {}  # Stores {item_id: quantity}
+        self._total_price: float = 0.0  # Tracks total price of items in the cart
 
-    def add_item(self, item_id: int, quantity: int = 1) -> None:
+    def add_furniture(self, item_id: int, quantity: int = 1) -> None:
         """
-        Add an item to cart and update store inventory.
+        Adds furniture to the shopping cart.
+        - Checks inventory to ensure enough stock exists.
+        - Updates cart dictionary.
+        - Adjusts total price accordingly.
         """
-        if item_id not in self.inventory.items:
-            print("Item not found in inventory")
+        # Check if item exists in inventory
+        if item_id not in self._inventory.items:
+            print("Item not found in inventory.")
             return
-        
-        item = self.inventory.items[item_id]
 
-        if item.quantity < quantity:
-            print(f"Not enough stock available for {item.title}. Only {item.quantity} left.")
+        # Check if requested quantity is available (but do NOT modify inventory)
+        available_quantity = self._inventory.get_quantity(item_id)
+        if available_quantity < quantity:
+            print(f"Not enough stock available. Only {available_quantity} left.")
             return
-        
-        #Add item to cart
-        self.cart_items[item_id] += quantity
-        self.total_price += (item.price * quantity)
 
-        #Update inventory stock
-        self.inventory.update_quantity(item_id, item.quantity - quantity)
+        # Add item to cart
+        self._cart_items[item_id] = self._cart_items.get(item_id, 0) + quantity
 
-        print(f"Added {quantity}x {item.title} to cart. Total: ${self.total_price:.2f}")
+        # Update total price
+        store_item = self.get_item_by_id(item_id)
+        self._total_price += store_item.price * quantity
 
-    def remove_item(self, item_id: int, quantity: int = 1) -> None:
+        print(f"Added {quantity}x {store_item.title} to cart. Total: ${self._total_price:.2f}")
+
+    def remove_furniture(self, item_id: int, quantity: int = 1) -> None:
         """
-        Remove item from cart and update store inventory.
+        Removes furniture from the shopping cart.
+        - Updates total price dynamically.
+        - Does NOT modify inventory.
         """
-        if item_id not in self.cart_items:
-            print("Item not found")
+        # Check if item is in the cart
+        if item_id not in self._cart_items:
+            print("Item not found in cart.")
             return
-        
-        item = self.inventory.items[item_id]
 
-        if self.cart_items[item_id] < quantity:
+        # Ensure valid quantity to remove
+        if self._cart_items[item_id] < quantity:
             print("Not enough quantity in cart to remove.")
             return
-        
-        #Remove item from cart
-        self.cart_items[item_id] -= quantity
-        self.total_price -= (item.price * quantity)
 
-        if self.cart_items == 0:
-            del self.cart_items[item_id]
+        # Retrieve item details
+        store_item = self.get_item_by_id(item_id)
 
-        #Restore quantity back to store inventory
-        self.inventory.update_quantity(item_id, item.quantity + quantity)
+        # Update cart
+        self._cart_items[item_id] -= quantity
+        if self._cart_items[item_id] == 0:
+            del self._cart_items[item_id]  # Remove item if quantity reaches 0
 
-        print(f"Removed {quantity}x {item.title} from cart. Total: ${self.total_price:.2f}")
+        # Update total price
+        self._total_price -= store_item.price * quantity
+
+        print(f"Removed {quantity}x {store_item.title} from cart. Total: ${self._total_price:.2f}")
+
+    def show_total_price(self) -> None:
+        """
+        Displays the current total price of items in the cart.
+        """
+        print(f"Total price for your cart: ${self._total_price:.2f}")
 
     def apply_discount(self, discount_percentage: float) -> None:
         """
-        Apply a discount to the total cart price.
+        Applies a discount to the total cart price.
+        - Ensures discount is valid (0-100%).
         """
         if discount_percentage <= 0 or discount_percentage > 100:
             print("Invalid discount percentage.")
             return
-        
-        self.discount = (discount_percentage / 100) * self.total_price
-        discounted_price: float = self.total_price - self.discount
-        print(f"Discount applied: ${self.discount:.2f}, New Total: ${discounted_price:.2f}")
+
+        discount_amount = (discount_percentage / 100) * self._total_price
+        discounted_price = self._total_price - discount_amount
+
+        self._total_price = discounted_price
+
+        print(f"Discount applied: ${discount_amount:.2f}, New Total: ${discounted_price:.2f}")
 
 
-    def view_cart(self) -> None:
-        """
-        Display items in the cart and Total price..
-        """
-        if not self.cart_items:
-            print("Your cart is currently empty.")
-            return
-        
-        print("\nShopping Cart:")
-        for item_id, quantity in self.cart_items.items():
-            item = self.inventory.items[item_id]
-            print(f"- {item.title}: {quantity} @ ${item.price:.2f} each")
-        print(f"Total Price: ${self.total_price:.2f}")
 
-
-    def show_price(self) -> float:
-        """
-        Returns the current total price of items in the cart.
-        """
-        print(f"Total price for your cart before discounts: ${self.total_price:.2f}")
+    def __repr__(self):
+        return f"ShoppingCart(items={self._cart_items}, total_price=${self._total_price:.2f})"
