@@ -36,9 +36,14 @@ class ShoppingCart:
 
         # Check if requested quantity is available (but do NOT modify inventory)
         available_quantity = self._inventory.get_quantity(item_id)
-        if available_quantity < quantity:
-            print(f"Not enough stock available. Only {available_quantity} left.")
-            return
+        if item_id in self._cart_items.keys():
+            if available_quantity < (quantity + self._cart_items[item_id]):
+                print(f"Not enough stock available. Only {available_quantity} left.")
+                return
+        else:
+            if available_quantity < quantity:
+                print(f"Not enough stock available. Only {available_quantity} left.")
+                return
 
         # Add item to cart
         self._cart_items[item_id] = self._cart_items.get(item_id, 0) + quantity
