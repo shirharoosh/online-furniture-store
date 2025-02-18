@@ -22,7 +22,7 @@ class ShoppingCart:
         self._cart_items: Dict[int, int] = {}  # Stores {item_id: quantity}
         self._total_price: float = 0.0  # Tracks total price of items in the cart
 
-    def add_furniture(self, item_id: int, quantity: int = 1) -> None:
+    def add_furniture(self, catalog, item_id: int, quantity: int = 1) -> None:
         """
         Adds furniture to the shopping cart.
         - Checks inventory to ensure enough stock exists.
@@ -44,12 +44,12 @@ class ShoppingCart:
         self._cart_items[item_id] = self._cart_items.get(item_id, 0) + quantity
 
         # Update total price
-        store_item = self.get_item_by_id(item_id)
+        store_item = self.get_item_by_id(item_id, catalog)
         self._total_price += store_item.price * quantity
 
         print(f"Added {quantity}x {store_item.title} to cart. Total: ${self._total_price:.2f}")
 
-    def remove_furniture(self, item_id: int, quantity: int = 1) -> None:
+    def remove_furniture(self, catalog, item_id: int, quantity: int = 1) -> None:
         """
         Removes furniture from the shopping cart.
         - Updates total price dynamically.
@@ -66,7 +66,7 @@ class ShoppingCart:
             return
 
         # Retrieve item details
-        store_item = self.get_item_by_id(item_id)
+        store_item = self.get_item_by_id(item_id, catalog = catalog)
 
         # Update cart
         self._cart_items[item_id] -= quantity
@@ -100,7 +100,13 @@ class ShoppingCart:
 
         print(f"Discount applied: ${discount_amount:.2f}, New Total: ${discounted_price:.2f}")
 
+    def get_item_by_id(self, item_id, catalog):
+        return catalog[item_id]
+
 
 
     def __repr__(self):
         return f"ShoppingCart(items={self._cart_items}, total_price=${self._total_price:.2f})"
+
+
+
