@@ -1,57 +1,54 @@
-# api.py
-"""
-This API file implements a RESTful API for the online furniture store using FastAPI.
-It exposes endpoints for:
- - Retrieving furniture items, orders, and user profiles (GET)
- - Registering users and logging in (POST)
- - Adding, updating, and removing items from the shopping cart and inventory (POST, PUT, DELETE)
- - Checking out to create orders
-
-All data is stored in global (simulated) databases using dictionaries.
-"""
-
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional, List, Dict
+import uvicorn
+
+# Import our project classes.
 from inventory import Inventory
+from store_item import Table, Bed, Closet, Chair, Sofa, StoreItem
 from shopping_cart import ShoppingCart
 from user import User
 from order import Order
 from user_order_dic import UserOrderDictionary
-from store_item import Table, Chair, Sofa
 
-# Create a simulated "catalog" of furniture items.
-# Our inventory will use only item IDs and quantities.
-catalog = {
-    101: Table(101, "Dining Table", 250, 75, 150, 30, "A sturdy wooden dining table."),
-    102: Chair(102, "Office Chair", 80, 100, 50, 10, "An ergonomic office chair.", material="Leather"),
-    103: Sofa(103, "Luxury Sofa", 500, 40, 200, 50, "A comfortable luxury sofa.", seating_capacity=3)
+app = FastAPI(title="Online Furniture Store API")
+
+# ----------------------
+# Global Instances Setup
+# ----------------------
+# Create an inventory instance.
+inventory = Inventory()
+
+# Create a sample catalog of store items.
+catalog: Dict[int, StoreItem] = {
+    1: Table(item_id=1, title="Modern Table", price=150.00, height=30, width=50, weight=20.0, description="A modern table."),
+    2: Bed(item_id=2, title="Queen Bed", price=300.00, height=40, width=60, weight=50.0,
+           description="A comfortable queen bed.", pillow_count=2),
+    3: Closet(item_id=3, title="Spacious Closet", price=250.00, height=80, width=100, weight=100.0,
+              description="A spacious closet.", with_mirror=True),
+    4: Chair(item_id=4, title="Office Chair", price=85.00, height=45, width=45, weight=15.0,
+             description="Ergonomic office chair.", material="leather"),
+    5: Sofa(item_id=5, title="Family Sofa", price=400.00, height=35, width=80, weight=70.0,
+            description="Comfortable family sofa.", seating_capacity=4)
 }
 
-# Global simulated "databases"
-global_inventory = Inventory()  # Manages stock as {item_id: quantity}
-global_user_orders = UserOrderDictionary()  # Stores orders per user
-user_accounts = {}  # Stores User objects indexed by email
-shopping_carts = {}  # Stores ShoppingCart objects indexed by user email
+# Populate the inventory with a default quantity (e.g. 10 each).
+for item_id in catalog:
+    inventory.add_item(item_id, 10)
+    print(f"DEBUG: Added item_id {item_id} with quantity 10 to inventory.")
 
-# Initialize inventory with stock for items in our catalog.
-global_inventory.add_item(101, 10)  # 10 Dining Tables
-global_inventory.add_item(102, 15)  # 15 Office Chairs
-global_inventory.add_item(103, 5)  # 5 Sofas
+# Create a global shopping cart instance linked to the inventory.
+shopping_cart = ShoppingCart(inventory)
 
-# Create FastAPI app instance
-app = FastAPI(
-    title="Online Furniture Store API",
-    description="A RESTful API for managing furniture items, user profiles, shopping carts, and orders.",
-    version="1.0.0"
-)
+# Dictionaries to store users and orders.
+user_db: Dict[str, User] = {}  # username -> User
+orders: List[Order] = []  # List of orders
+user_order_dict = UserOrderDictionary()
 
-
-# ------------------------------
-# Pydantic Models for Request Data
-# ------------------------------
-
-class SignUpRequest(BaseModel):
+# --------------------------
+# Pydantic Models for Routes
+# --------------------------
+class UserRegister(BaseModel):
     username: str
     full_name: str
     email: str
@@ -59,262 +56,278 @@ class SignUpRequest(BaseModel):
     address: str
     phone_number: str
 
-
-class LoginRequest(BaseModel):
+class UserLogin(BaseModel):
     email: str
     password: str
 
-
-class CartItemRequest(BaseModel):
-    item_id: int
-    quantity: int
-
-
-class CheckoutRequest(BaseModel):
-    email: str
-    payment_method: str
-    shipping_address: Optional[str] = None
-
-
-class ProfileUpdateRequest(BaseModel):
+class UpdateProfile(BaseModel):
     full_name: Optional[str] = None
     address: Optional[str] = None
     phone_number: Optional[str] = None
 
+class CartItem(BaseModel):
+    item_id: int
+    quantity: int
 
-# ------------------------------
-# Helper Functions
-# ------------------------------
+class InventoryUpdate(BaseModel):
+    quantity: int
 
-def get_user_by_email(email: str) -> User:
-    if email not in user_accounts:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user_accounts[email]
+class OrderItem(BaseModel):
+    item_id: int
+    quantity: int
 
+class OrderCreate(BaseModel):
+    username: str
+    items: List[OrderItem]
 
-def get_cart_by_email(email: str) -> ShoppingCart:
-    if email not in shopping_carts:
-        raise HTTPException(status_code=404, detail="Shopping cart not found")
-    return shopping_carts[email]
+class Discount(BaseModel):
+    discount_percentage: float
 
-
-# ------------------------------
-# API Endpoints
-# ------------------------------
-
-# --- User Management Endpoints ---
-@app.post("/signup", summary="Register a new user", response_description="User registered")
-def signup(user_data: SignUpRequest):
+# ---------------------------
+# API Endpoints (Routes)
+# ---------------------------
+@app.get("/")
+def read_root():
     """
-    Register a new user. Uses the existing User.sign_up() method.
+    Root endpoint for debugging.
     """
-    if user_data.email in user_accounts:
-        raise HTTPException(status_code=400, detail="User already exists")
-    new_user = User(
-        user_data.username,
-        user_data.full_name,
-        user_data.email,
-        user_data.password,
-        user_data.address,
-        user_data.phone_number
-    )
-    # Call the sign_up method from the User class.
-    message = new_user.sign_up()
-    user_accounts[user_data.email] = new_user
-    # Create a new shopping cart for the user.
-    shopping_carts[user_data.email] = ShoppingCart(global_inventory)
-    return {"message": message}
+    print("DEBUG: Root endpoint called.")
+    return {"message": "Welcome to the Online Furniture Store API!"}
 
+@app.get("/items", response_model=List[Dict])
+def get_items(name: Optional[str] = None, category: Optional[str] = None,
+              min_price: Optional[float] = None, max_price: Optional[float] = None):
+    """
+    Retrieve a list of store items available in the inventory.
+    Optional filters: name, category, min_price, max_price.
+    """
+    print("DEBUG: GET /items called with filters:",
+          f"name={name}, category={category}, min_price={min_price}, max_price={max_price}")
+    # Use the Inventory.search_items() to filter available items.
+    matching_items = inventory.search_items(list(catalog.values()), name, category, min_price, max_price)
+    items_list = []
+    for item in matching_items:
+        items_list.append({
+            "item_id": item.item_id,
+            "title": item.title,
+            "price": item.price,
+            "description": item.get_description()
+        })
+    return items_list
 
-@app.post("/login", summary="Log in a user", response_description="User logged in")
-def login(login_data: LoginRequest):
+@app.get("/items/{item_id}", response_model=Dict)
+def get_item(item_id: int):
     """
-    Log in an existing user. Uses the User.login() method.
+    Retrieve details of a single item by its item_id.
     """
-    if login_data.email not in user_accounts:
-        raise HTTPException(status_code=404, detail="User not found. Please sign up.")
-    user = user_accounts[login_data.email]
-    result = user.login(login_data.email, login_data.password)
-    if "logged in successfully" not in result:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+    print(f"DEBUG: GET /items/{item_id} called.")
+    if item_id not in catalog:
+        raise HTTPException(status_code=404, detail="Item not found.")
+    item = catalog[item_id]
+    return {
+        "item_id": item.item_id,
+        "title": item.title,
+        "price": item.price,
+        "description": item.get_description()
+    }
+
+@app.post("/users/register")
+def register_user(user: UserRegister):
+    """
+    Register a new user.
+    """
+    print(f"DEBUG: POST /users/register called for username: {user.username}")
+    if user.username in user_db:
+        raise HTTPException(status_code=400, detail="Username already exists.")
+    new_user = User(user.username, user.full_name, user.email, user.password, user.address, user.phone_number)
+    user_db[user.username] = new_user
+    print(f"DEBUG: User {user.username} registered successfully.")
+    return {"message": new_user.sign_up()}
+
+@app.post("/users/login")
+def login_user(login: UserLogin):
+    """
+    Log in a user.
+    """
+    print(f"DEBUG: POST /users/login called for email: {login.email}")
+    # Find user by email.
+    user = next((u for u in user_db.values() if u.email == login.email), None)
+    if user is None or not user.verify_password(login.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    result = user.login(login.email, login.password)
+    print(f"DEBUG: User login result: {result}")
     return {"message": result}
 
+@app.put("/users/{username}")
+def update_user_profile(username: str, profile: UpdateProfile):
+    """
+    Update an existing user's profile.
+    """
+    print(f"DEBUG: PUT /users/{username} called.")
+    if username not in user_db:
+        raise HTTPException(status_code=404, detail="User not found.")
+    user = user_db[username]
+    result = user.manage_profile(profile.full_name, profile.address, profile.phone_number)
+    print(f"DEBUG: Updated profile for user {username}.")
+    return {"message": result}
 
-@app.get("/users/{email}", summary="Get user profile", response_description="User profile")
-def get_user_profile(email: str = Path(..., description="The email of the user")):
+@app.get("/users/{username}")
+def get_user_profile(username: str):
     """
-    Retrieve the profile of a user.
+    Retrieve a user's profile information.
     """
-    user = get_user_by_email(email)
-    # For security, we only return non-sensitive profile data.
+    print(f"DEBUG: GET /users/{username} called.")
+    if username not in user_db:
+        raise HTTPException(status_code=404, detail="User not found.")
+    user = user_db[username]
     return {
         "username": user.username,
         "full_name": user.full_name,
-        "email": user.email,
-        "address": user._address,
-        "phone_number": user._phone_number,
-        "order_history": user.view_order_history()
+        "email": user.email
     }
 
-
-@app.put("/users/{email}", summary="Update user profile", response_description="Profile updated")
-def update_user_profile(email: str, profile: ProfileUpdateRequest):
+@app.get("/orders")
+def get_all_orders():
     """
-    Update user profile information.
+    Retrieve all orders.
     """
-    user = get_user_by_email(email)
-    result = user.manage_profile(profile.full_name, profile.address, profile.phone_number)
-    return {"message": result}
-
-
-# --- Furniture Items Endpoints ---
-@app.get("/items", summary="Get all furniture items", response_description="List of furniture items")
-def get_all_items():
-    """
-    Retrieve a list of all furniture items from the catalog, along with available quantities.
-    """
-    items_list = []
-    for item_id, item in catalog.items():
-        available = global_inventory.get_quantity(item_id)
-        items_list.append({
-            "item_id": item_id,
-            "title": item.title,
-            "price": item.price,
-            "description": item.description,
-            "available_quantity": available
+    print("DEBUG: GET /orders called.")
+    orders_list = []
+    for order in orders:
+        orders_list.append({
+            "user": order.user.username,
+            "total_price": order.total_price,
+            "status": order.status,
+            "items": order.items
         })
-    return {"items": items_list}
+    return orders_list
 
-
-# --- Shopping Cart Endpoints ---
-@app.post("/cart/add", summary="Add item to shopping cart", response_description="Item added to cart")
-def add_item_to_cart(cart_item: CartItemRequest, email: str = Query(..., description="User email")):
+@app.post("/orders")
+def create_order(order_data: OrderCreate):
     """
-    Add an item to the shopping cart. Checks inventory to ensure enough stock exists.
-    (Note: Inventory is only checked, not updated, until checkout.)
+    Create a new order for a user.
     """
-    cart = get_cart_by_email(email)
-    cart.add_furniture(cart_item.item_id, cart_item.quantity)
-    return {"message": "Item added to cart", "cart": cart._cart_items, "total_price": cart._total_price}
+    print(f"DEBUG: POST /orders called for user: {order_data.username}")
+    if order_data.username not in user_db:
+        raise HTTPException(status_code=404, detail="User not found.")
+    user = user_db[order_data.username]
+    order_items = []
+    total_price = 0.0
+    # Process each order item.
+    for item in order_data.items:
+        if item.item_id not in catalog:
+            raise HTTPException(status_code=404, detail=f"Item {item.item_id} not found.")
+        available_qty = inventory.get_quantity(item.item_id)
+        if available_qty < item.quantity:
+            raise HTTPException(status_code=400, detail=f"Not enough stock for item {item.item_id}.")
+        order_items.append((catalog[item.item_id], item.quantity))
+        total_price += catalog[item.item_id].price * item.quantity
+        # Update inventory: reduce the quantity.
+        inventory.update_quantity(item.item_id, available_qty - item.quantity)
+        print(f"DEBUG: Updated inventory for item {item.item_id}: new quantity {available_qty - item.quantity}")
+    new_order = Order(user, order_items, total_price)
+    orders.append(new_order)
+    user_order_dict.update(new_order)
+    print(f"DEBUG: Order created for user {user.username} with total price ${total_price:.2f}")
+    return {"message": "Order created successfully.", "order": repr(new_order)}
 
-
-@app.put("/cart/update", summary="Update item quantity in cart", response_description="Cart updated")
-def update_cart_item(cart_item: CartItemRequest, email: str = Query(..., description="User email")):
+@app.post("/cart/items")
+def add_item_to_cart(cart_item: CartItem):
     """
-    Update the quantity of an item in the shopping cart.
-    For simplicity, we remove the item and add it with the new quantity.
+    Add an item to the shopping cart.
     """
-    cart = get_cart_by_email(email)
-    # Remove the item completely first
-    if cart_item.item_id in cart._cart_items:
-        current_quantity = cart._cart_items[cart_item.item_id]
-        cart.remove_furniture(cart_item.item_id, current_quantity)
-    # Add the item with new quantity
-    cart.add_furniture(cart_item.item_id, cart_item.quantity)
-    return {"message": "Cart updated", "cart": cart._cart_items, "total_price": cart._total_price}
+    print(f"DEBUG: POST /cart/items called for item_id: {cart_item.item_id} with quantity {cart_item.quantity}")
+    if cart_item.item_id not in catalog:
+        raise HTTPException(status_code=404, detail="Item not found in catalog.")
+    shopping_cart.add_furniture(catalog, cart_item.item_id, cart_item.quantity)
+    return {"message": "Item added to cart.", "cart": repr(shopping_cart)}
 
-
-@app.delete("/cart/delete/{item_id}", summary="Remove item from cart", response_description="Item removed")
-def delete_cart_item(item_id: int = Path(..., description="Item ID to remove"),
-                     quantity: int = Query(1, description="Quantity to remove"),
-                     email: str = Query(..., description="User email")):
+@app.delete("/cart/items/{item_id}")
+def remove_item_from_cart(item_id: int, quantity: int = 1):
     """
     Remove an item from the shopping cart.
     """
-    cart = get_cart_by_email(email)
-    cart.remove_furniture(item_id, quantity)
-    return {"message": "Item removed from cart", "cart": cart._cart_items, "total_price": cart._total_price}
+    print(f"DEBUG: DELETE /cart/items/{item_id} called with quantity {quantity}")
+    if item_id not in catalog:
+        raise HTTPException(status_code=404, detail="Item not found in catalog.")
+    shopping_cart.remove_furniture(catalog, item_id, quantity)
+    return {"message": "Item removed from cart.", "cart": repr(shopping_cart)}
 
-
-@app.get("/cart/view", summary="View shopping cart", response_description="Cart details")
-def view_cart(email: str = Query(..., description="User email")):
+@app.put("/inventory/{item_id}")
+def update_inventory_item(item_id: int, inv_update: InventoryUpdate):
     """
-    Retrieve the contents of the shopping cart along with the total price.
+    Update the quantity of an inventory item.
     """
-    cart = get_cart_by_email(email)
-    return {"cart": cart._cart_items, "total_price": cart._total_price}
+    print(f"DEBUG: PUT /inventory/{item_id} called with new quantity {inv_update.quantity}")
+    if item_id not in inventory.items:
+        raise HTTPException(status_code=404, detail="Item not found in inventory.")
+    inventory.update_quantity(item_id, inv_update.quantity)
+    return {"message": "Inventory updated.", "inventory": inventory.items}
 
-
-# --- Inventory Endpoints ---
-@app.put("/inventory/update/{item_id}", summary="Update inventory quantity", response_description="Inventory updated")
-def update_inventory(item_id: int = Path(..., description="Item ID to update"),
-                     quantity: int = Query(..., description="New quantity")):
-    """
-    Update the quantity of an item in the inventory.
-    """
-    if item_id not in global_inventory.items:
-        raise HTTPException(status_code=404, detail="Item not found in inventory")
-    global_inventory.update_quantity(item_id, quantity)
-    return {"message": "Inventory updated", "inventory": global_inventory.items}
-
-
-@app.delete("/inventory/delete/{item_id}", summary="Delete item from inventory", response_description="Item deleted")
-def delete_inventory_item(item_id: int = Path(..., description="Item ID to delete")):
+@app.delete("/inventory/{item_id}")
+def remove_inventory_item(item_id: int):
     """
     Remove an item from the inventory.
     """
-    if item_id not in global_inventory.items:
-        raise HTTPException(status_code=404, detail="Item not found in inventory")
-    global_inventory.remove_item(item_id)
-    return {"message": "Item removed from inventory", "inventory": global_inventory.items}
+    print(f"DEBUG: DELETE /inventory/{item_id} called.")
+    if item_id not in inventory.items:
+        raise HTTPException(status_code=404, detail="Item not found in inventory.")
+    inventory.remove_item(item_id)
+    return {"message": "Item removed from inventory.", "inventory": inventory.items}
 
-
-# --- Orders Endpoints ---
-@app.get("/orders", summary="Get orders for a user", response_description="List of orders")
-def get_orders(email: str = Query(..., description="User email")):
+@app.post("/cart/apply_discount")
+def apply_cart_discount(discount: Discount):
     """
-    Retrieve all orders placed by a user.
+    Apply a discount percentage to the shopping cart's total price.
     """
-    user = get_user_by_email(email)
-    orders = global_user_orders.get_orders_for_user(user)
-    return {"orders": [order.__repr__() for order in orders]}
+    print(f"DEBUG: POST /cart/apply_discount called with discount {discount.discount_percentage}%")
+    shopping_cart.apply_discount(discount.discount_percentage)
+    return {"message": "Discount applied.", "cart": repr(shopping_cart)}
 
-
-@app.post("/checkout", summary="Checkout and create an order", response_description="Order placed")
-def checkout(checkout_data: CheckoutRequest):
+@app.post("/checkout")
+def checkout(username: str):
     """
-    Process checkout:
-      - Validates that the cart has items and sufficient stock.
-      - Mocks payment processing.
-      - Deducts purchased items from inventory.
-      - Creates a new order and updates the order history.
-      - Clears the user's shopping cart.
+    Process checkout: creates an order from the shopping cart,
+    updates the inventory, and clears the shopping cart.
     """
-    user = get_user_by_email(checkout_data.email)
-    cart = get_cart_by_email(checkout_data.email)
+    print(f"DEBUG: POST /checkout called for user: {username}")
+    if username not in user_db:
+        raise HTTPException(status_code=404, detail="User not found.")
+    user = user_db[username]
+    if not shopping_cart._cart_items:
+        raise HTTPException(status_code=400, detail="Shopping cart is empty.")
 
-    if not cart._cart_items:
-        raise HTTPException(status_code=400, detail="Cart is empty")
+    order_items = []
+    total_price = shopping_cart._total_price
+    for item_id, quantity in shopping_cart._cart_items.items():
+        order_items.append((catalog[item_id], quantity))
+        available_qty = inventory.get_quantity(item_id)
+        if available_qty < quantity:
+            raise HTTPException(status_code=400, detail=f"Not enough stock for item {item_id} during checkout.")
+        inventory.update_quantity(item_id, available_qty - quantity)
+        print(f"DEBUG: Checkout - updated inventory for item {item_id}: new quantity {available_qty - quantity}")
 
-    # Validate inventory availability
-    for item_id, qty in cart._cart_items.items():
-        if global_inventory.get_quantity(item_id) < qty:
-            raise HTTPException(status_code=400, detail=f"Not enough stock for item {item_id}")
+    new_order = Order(user, order_items, total_price)
+    orders.append(new_order)
+    user_order_dict.update(new_order)
+    print(f"DEBUG: Checkout complete for user {username} with order total ${total_price:.2f}")
+    # Clear the shopping cart.
+    shopping_cart._cart_items.clear()
+    shopping_cart._total_price = 0.0
+    print("DEBUG: Shopping cart cleared after checkout.")
+    return {"message": "Checkout successful.", "order": repr(new_order)}
 
-    # Process payment (mocked)
-    print(f"Processing payment of ${cart._total_price:.2f} using {checkout_data.payment_method}...")
-    payment_successful = process_payment(cart._total_price, checkout_data.payment_method)
-    if not payment_successful:
-        raise HTTPException(status_code=400, detail="Payment failed")
+# ---------------------------
+# How to Run the API
+# ---------------------------
+# 1. Install dependencies:
+#    pip install fastapi uvicorn bcrypt
+#
+# 2. Run the API with:
+#    uvicorn main:app --reload
+#
+# The --reload flag is useful during development as it auto-restarts the server
+# whenever you make changes to the code.
 
-    # Deduct purchased items from inventory
-    for item_id, qty in cart._cart_items.items():
-        new_qty = global_inventory.get_quantity(item_id) - qty
-        global_inventory.update_quantity(item_id, new_qty)
-
-    # Create and store the order
-    order = Order(user, list(cart._cart_items.keys()), cart._total_price, status="Completed")
-    global_user_orders.update(order)
-
-    # Clear shopping cart (create a new empty cart)
-    shopping_carts[checkout_data.email] = ShoppingCart(global_inventory)
-
-    return {"message": "Order placed successfully", "order": order.__repr__()}
-
-
-def process_payment(amount: float, payment_method: str) -> bool:
-    """
-    Simulate payment processing. Always returns True for this mock.
-    """
-    print(f"Payment of ${amount:.2f} processed successfully with {payment_method}.")
-    return True
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
