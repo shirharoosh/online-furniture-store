@@ -1,9 +1,12 @@
+from flask import Flask, jsonify, request
 from inventory import Inventory
 from shopping_cart import ShoppingCart
 from user import User
 from order import Order
 from user_order_dic import UserOrderDictionary
 from store_item import Table, Chair, Sofa
+
+app = Flask(__name__)
 
 # Global shared resources (Simulated database)
 global_inventory = Inventory()  # Shared inventory across users
@@ -24,15 +27,16 @@ def initialize_inventory():
     for item_id in catalog:
         quantity = 10  # Set initial stock for each item
         global_inventory.add_item(item_id, quantity)
-    print("Inventory initialized!")
+    print(global_inventory)
 
 
 def initialize_users():
-    """Creates three pre-generated users to allow easy login."""
+    """Creates pre-generated users."""
     pre_generated_users = [
         ("alice@example.com", "Alice123", "Alice", "Alice Wonderland", "456 Elm St", "123456789"),
         ("bob@example.com", "Bob456", "Bob", "Bob Builder", "789 Oak St", "987654321"),
-        ("charlie@example.com", "Charlie789", "Charlie", "Charlie Brown", "321 Pine St", "555555555")
+        ("charlie@example.com", "Charlie789", "Charlie", "Charlie Brown", "321 Pine St", "555555555"),
+        ("f", "f", "David", "David Davis", "101112 Elm St", "098765432"),
     ]
 
     for email, password, username, full_name, address, phone_number in pre_generated_users:
@@ -40,15 +44,35 @@ def initialize_users():
         user_accounts[email] = new_user
         shopping_carts[email] = ShoppingCart(global_inventory)
 
-    print("Users initialized! You can log in with:")
-    for email, password, username, _, _, _ in pre_generated_users:
-        print(f"Username: {username}, Email: {email}, Password: {password}")
+
+def sign_up():
+    """Allows a new user to sign up."""
+    print("\nSign Up")
+    email = input("Enter email: ").strip()
+
+    if email in user_accounts:
+        print("Error: Email already exists. Try logging in.")
+        return None
+
+    username = input("Enter username: ").strip()
+    full_name = input("Enter full name: ").strip()
+    password = input("Enter password: ").strip()
+    address = input("Enter address: ").strip()
+    phone_number = input("Enter phone number: ").strip()
+
+    new_user = User(username, full_name, email, password, address, phone_number)
+    user_accounts[email] = new_user
+    shopping_carts[email] = ShoppingCart(global_inventory)
+
+    print(f"User {username} registered successfully! You can now log in.")
+    return new_user
 
 
 def log_in():
-    """Handles user login using User.login()."""
+    """Handles user login."""
     print("\nLog In")
     email = input("Enter email: ").strip()
+
     if email not in user_accounts:
         print("User not found. Please sign up first.")
         return None
@@ -83,12 +107,17 @@ def user_interface(user):
         if choice == "1":
             item_id = int(input("Enter item ID: ").strip())
             quantity = int(input("Enter quantity: ").strip())
-            cart.add_furniture(item_id, quantity)
+
+            if item_id not in catalog:
+                print("Error: Invalid item ID.")
+                continue
+
+            cart.add_furniture(catalog, item_id, quantity)
 
         elif choice == "2":
             item_id = int(input("Enter item ID: ").strip())
             quantity = int(input("Enter quantity: ").strip())
-            cart.remove_furniture(item_id, quantity)
+            cart.remove_furniture(catalog, item_id, quantity)
 
         elif choice == "3":
             print(cart)
@@ -108,23 +137,16 @@ def user_interface(user):
 
 
 def checkout(user, cart):
-    """
-    Handles the checkout process:
-    - Collects payment details.
-    - Validates stock availability.
-    - Processes payment (mocked).
-    - Updates inventory and order history.
-    """
+    """Handles checkout process."""
     print("\n--- Checkout Process ---")
     if not cart._cart_items:
         print("Your cart is empty. Add items before checking out.")
         return
 
-    # Collect user details
     shipping_address = input("Enter shipping address: ").strip() or user.address
-    payment_method = input("Enter payment method (e.g., Credit Card, PayPal): ").strip()
+    payment_method = input("Enter payment method (Credit Card, PayPal): ").strip()
 
-    # Validate inventory availability before proceeding
+    # Validate inventory availability
     for item_id, quantity in cart._cart_items.items():
         if global_inventory.get_quantity(item_id) < quantity:
             print(f"Error: Not enough stock for item {item_id}. Remove items before proceeding.")
@@ -132,42 +154,40 @@ def checkout(user, cart):
 
     # Mock Payment Processing
     print(f"Processing payment of ${cart._total_price:.2f} using {payment_method}...")
-    payment_successful = process_payment(cart._total_price, payment_method)
-
-    if not payment_successful:
-        print("Payment failed. Please try again.")
-        return
+    print(f"Payment of ${cart._total_price:.2f} processed successfully.")
 
     # Deduct purchased items from inventory
     for item_id, quantity in cart._cart_items.items():
         global_inventory.update_quantity(item_id, global_inventory.get_quantity(item_id) - quantity)
 
-    # Create the order and update the user's order history
+    # Create the order
     order = Order(user, list(cart._cart_items.keys()), cart._total_price, status="Pending")
     global_user_orders.update(order)
 
-    # Clear the shopping cart after a successful checkout
+    # Clear the cart
     shopping_carts[user.email] = ShoppingCart(global_inventory)
 
     print(f"\nOrder placed successfully for {user.username}!\nOrder Details: {order}")
     print("Thank you for shopping with us!\n")
 
 
-def process_payment(amount, payment_method):
-    """Mock payment processing."""
-    print(f"Payment of ${amount:.2f} processed successfully with {payment_method}.")
-    return True
+@app.route("/api/inventory", methods=["GET"])
+def view_inventory():
+    """API endpoint to view inventory."""
+    inventory_data = {item_id: global_inventory.get_quantity(item_id) for item_id in catalog}
+    return jsonify(inventory_data)
 
 
 def main():
-    """Main function to initialize inventory, create test users, and handle user login/signup."""
+    """Main function to initialize the application."""
     initialize_inventory()
-    initialize_users()  # Generate 3 users for easy login
+    initialize_users()
 
     while True:
         print("\nWelcome to the Online Furniture Store!")
         print("1. Log In")
-        print("2. Exit")
+        print("2. Sign Up")
+        print("3. Exit")
 
         choice = input("Choose an option: ").strip()
 
@@ -177,6 +197,11 @@ def main():
                 user_interface(user)
 
         elif choice == "2":
+            user = sign_up()
+            if user:
+                user_interface(user)
+
+        elif choice == "3":
             print("Exiting the application. Goodbye!")
             break
 
@@ -186,3 +211,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    app.run(debug=True)  # Start the Flask API
