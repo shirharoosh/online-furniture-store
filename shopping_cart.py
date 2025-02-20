@@ -22,13 +22,15 @@ class ShoppingCart:
         self._cart_items: Dict[int, int] = {}  # Stores {item_id: quantity}
         self._total_price: float = 0.0  # Tracks total price of items in the cart
 
-    def add_furniture(self, catalog, item_id: int, quantity: int = 1) -> None:
+    def add_furniture(self, item_id: int, quantity: int = 1) -> None:
         """
         Adds furniture to the shopping cart.
         - Checks inventory to ensure enough stock exists.
         - Updates cart dictionary.
         - Adjusts total price accordingly.
         """
+        catalog = self._inventory.get_catalog()
+
         # Check if item exists in inventory
         if item_id not in self._inventory.items:
             print("Item not found in inventory.")
@@ -54,12 +56,13 @@ class ShoppingCart:
 
         print(f"Added {quantity}x {store_item.title} to cart. Total: ${self._total_price:.2f}")
 
-    def remove_furniture(self, catalog, item_id: int, quantity: int = 1) -> None:
+    def remove_furniture(self, item_id: int, quantity: int = 1) -> None:
         """
         Removes furniture from the shopping cart.
         - Updates total price dynamically.
         - Does NOT modify inventory.
         """
+        catalog = self._inventory.get_catalog()
         # Check if item is in the cart
         if item_id not in self._cart_items:
             print("Item not found in cart.")
