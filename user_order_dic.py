@@ -28,4 +28,4 @@ class UserOrderDictionary:
         """
         Returns a list of orders associated with the given user.
         """
-        return self._user_orders.get(user.username, [])
+        return list(self._user_orders.get(user.username, []))
