@@ -22,11 +22,12 @@ catalog = {
 }
 
 
-def initialize_inventory():
+def initialize_inventory(catalog):
     """Populates the inventory with initial stock using predefined catalog items."""
     for item_id in catalog:
         quantity = 10  # Set initial stock for each item
         global_inventory.add_item(item_id, quantity)
+    global_inventory.set_catalog(catalog)
     print(global_inventory)
 
 
@@ -112,7 +113,7 @@ def user_interface(user):
                 print("Error: Invalid item ID.")
                 continue
 
-            cart.add_furniture(catalog, item_id, quantity)
+            cart.add_furniture(item_id, quantity)
 
         elif choice == "2":
             item_id = int(input("Enter item ID: ").strip())
@@ -180,7 +181,7 @@ def view_inventory():
 
 def main():
     """Main function to initialize the application."""
-    initialize_inventory()
+    initialize_inventory(catalog)
     initialize_users()
 
     while True:

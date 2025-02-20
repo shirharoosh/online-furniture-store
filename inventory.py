@@ -10,6 +10,17 @@ class Inventory:
 
     def __init__(self):
         self._items: Dict[int, int] = {}  # item_id -> quantity
+        self._catalog = None
+
+    def set_catalog(self, catalog: dict) -> None:
+        """
+        Sets the catalog reference, ensuring inventory always reflects catalog updates
+        """
+        self._catalog = catalog  # Keep a direct reference to the original
+
+    def get_catalog(self) -> dict:
+        """Returns a copy of the catalog to prevent modifications."""
+        return self._catalog.copy() if self._catalog else {}
 
     def add_item(self, item_id: int, quantity: int) -> None:
         """
