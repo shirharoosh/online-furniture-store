@@ -175,7 +175,10 @@ def checkout(user, cart):
 @app.route("/api/inventory", methods=["GET"])
 def view_inventory():
     """API endpoint to view inventory."""
-    inventory_data = {item_id: global_inventory.get_quantity(item_id) for item_id in catalog}
+    inventory_data = {
+        str(item_id): global_inventory.get_quantity(item_id)  # Ensure fresh inventory
+        for item_id in global_inventory.items.keys()  # Only pull from actual inventory
+    }
     return jsonify(inventory_data)
 
 
