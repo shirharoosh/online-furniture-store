@@ -7,6 +7,14 @@ from store_item import Table, Bed, Closet, Chair, Sofa
 def sample_inventory():
     """Creates a sample inventory with predefined stock levels."""
     inventory = Inventory()
+    catalog = {
+        1: Table(1, "Dining Table", 150.0, 75, 120, 50.0, "A wooden dining table"),
+        2: Bed(2, "King Bed", 300.0, 60, 80, 70.0, "A king-sized bed", pillow_count=4),
+        3: Closet(3, "Wardrobe", 200.0, 180, 100, 80.0, "A wardrobe with mirror", with_mirror=True),
+        4: Chair(4, "Office Chair", 100.0, 50, 50, 30.0, "A comfortable office chair", material="leather"),
+        5: Sofa(5, "Living Room Sofa", 500.0, 200, 80, 90.0, "A large comfortable sofa", seating_capacity=3),
+    }
+    inventory.set_catalog(catalog)
     inventory.add_item(1, 10)  # Table
     inventory.add_item(2, 5)  # Bed
     inventory.add_item(3, 0)  # Closet (out of stock but still in inventory)
@@ -74,5 +82,19 @@ def test_inventory_keys_and_values_are_int(sample_inventory):
         assert isinstance(value, int), f"Value {value} for key {key} is not an integer"
 
 
+def test_search_items(sample_inventory):
+    """Tests searching for items by name, category, and price range."""
+    results = sample_inventory.search_items(name="Dining")
+    assert len(results) == 1
+    assert results[0].title == "Dining Table"
 
-# More tests are needed for the search!
+    results = sample_inventory.search_items(category="Bed")
+    assert len(results) == 1
+    assert results[0].title == "King Bed"
+
+    results = sample_inventory.search_items(min_price=200, max_price=400)
+    assert len(results) == 2  # Bed and Closet are within this range
+    assert all(200 <= item.price <= 400 for item in results)
+
+    results = sample_inventory.search_items(name="Nonexistent")
+    assert len(results) == 0  # No items should match

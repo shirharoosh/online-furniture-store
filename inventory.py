@@ -51,7 +51,7 @@ class Inventory:
         """
         return self._items.get(item_id, 0)
 
-    def search_items(self, available_items: List[StoreItem], name: str = None, category: str = None,
+    def search_items(self, name: str = None, category: str = None,
                      min_price: float = None, max_price: float = None) -> List[StoreItem]:
         """
         Searches for items based on name, category, and price range.
@@ -59,7 +59,6 @@ class Inventory:
         - Items will be matched using their item_id.
 
         Args:
-            available_items (List[StoreItem]): A list of available store items to search from.
             name (str): Search by name.
             category (str): Search by category (class name).
             min_price (float): Minimum price filter.
@@ -68,6 +67,7 @@ class Inventory:
         Returns:
             List[StoreItem]: List of matching StoreItem objects.
         """
+        available_items = self.get_catalog().values() # returns a list of SroreItems
         results = []
         for item in available_items:
             # Ensure the item exists in inventory (by checking item_id)
