@@ -414,3 +414,37 @@ def test_sign_up_existing_email(mock_input, reset_globals):
     user = sign_up()
 
     assert user is None, "Sign-up should fail when email is already registered."
+
+
+def test_regression_order_process_updates_all_components(reset_globals):
+    """Regression test ensuring all components are updated after checkout."""
+    initialize_users()
+    user = user_accounts["alice@example.com"]
+    shopping_carts[user.email] = ShoppingCart(global_inventory)
+
+    # Step 1: Add an item to the inventory and catalog
+    catalog = {101: Table(101, "Dining Table", 250, 75, 150, 30, "A sturdy wooden dining table.")}
+    global_inventory.set_catalog(catalog)
+    global_inventory.add_item(101, 5)
+
+    # Step 2: Add item to shopping cart
+    shopping_carts[user.email].add_furniture(101, 2)
+
+    # Assert pre-checkout conditions
+    assert global_inventory.get_quantity(101) == 5, "Inventory should have 5 items before checkout"
+    assert shopping_carts[user.email]._cart_items[101] == 2, "Cart should have 2 items before checkout"
+    assert not global_user_orders.get_orders_for_user(user), "User should have no orders before checkout"
+
+    # Step 3: Perform checkout
+    with patch("builtins.input", side_effect=["123 Test St", "Credit Card"]):
+        checkout(user, shopping_carts[user.email])
+
+    # Step 4: Assert post-checkout conditions
+    assert global_inventory.get_quantity(101) == 3, "Inventory should decrease by 2 after checkout"
+    assert not shopping_carts[user.email]._cart_items, "Shopping cart should be empty after checkout"
+    assert len(global_user_orders.get_orders_for_user(user)) == 1, "User should have one order after checkout"
+    assert user.view_order_history(), "User order history should be updated"
+
+    # Debugging Output
+    print("Regression Test Passed: All components updated correctly after order processing ✅")
+
