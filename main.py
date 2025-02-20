@@ -118,7 +118,7 @@ def user_interface(user):
         elif choice == "2":
             item_id = int(input("Enter item ID: ").strip())
             quantity = int(input("Enter quantity: ").strip())
-            cart.remove_furniture(catalog, item_id, quantity)
+            cart.remove_furniture(item_id, quantity)
 
         elif choice == "3":
             print(cart)
