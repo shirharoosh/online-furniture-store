@@ -38,6 +38,7 @@ shopping_carts = {}  # Stores ShoppingCart objects indexed by user email
 global_inventory.add_item(101, 10)  # 10 Dining Tables
 global_inventory.add_item(102, 15)  # 15 Office Chairs
 global_inventory.add_item(103, 5)  # 5 Sofas
+global_inventory.set_catalog(catalog)  # setting catalog as required in the updated inv
 
 # Create FastAPI app instance
 app = FastAPI(
