@@ -245,7 +245,12 @@ def update_inventory(item_id: int = Path(..., description="Item ID to update"),
     """
     if item_id not in global_inventory.items:
         raise HTTPException(status_code=404, detail="Item not found in inventory")
-    global_inventory.update_quantity(item_id, quantity)
+
+    current_quantity = global_inventory.get_quantity(item_id)
+    new_quantity = current_quantity + quantity  # Instead of replacing, add to existing stock
+
+    global_inventory.update_quantity(item_id, new_quantity)
+
     return {"message": "Inventory updated", "inventory": global_inventory.items}
 
 
@@ -300,8 +305,11 @@ def checkout(checkout_data: CheckoutRequest):
 
     # Deduct purchased items from inventory
     for item_id, qty in cart._cart_items.items():
-        new_qty = global_inventory.get_quantity(item_id) - qty
-        global_inventory.update_quantity(item_id, new_qty)
+        current_stock = global_inventory.get_quantity(item_id)
+        new_stock = current_stock - qty  # Subtract purchased quantity
+        global_inventory.update_quantity(item_id, new_stock)
+
+    print("Inventory After Checkout:", global_inventory.items)  # Debugging
 
     # Create and store the order
     order = Order(user, list(cart._cart_items.keys()), cart._total_price, status="Completed")
