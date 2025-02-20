@@ -4,11 +4,14 @@ from api import app
 
 client = TestClient(app)
 
+
 # ------------------------------
 # User Management Tests
 # ------------------------------
 
+
 def test_signup():
+    """Tests user registration."""
     response = client.post("/signup", json={
         "username": "testuser",
         "full_name": "Test User",
@@ -20,7 +23,9 @@ def test_signup():
     assert response.status_code == 200
     assert "message" in response.json()
 
+
 def test_signup_existing_user():
+    """Tests registering an already existing user."""
     client.post("/signup", json={
         "username": "existinguser",
         "full_name": "Existing User",
@@ -29,6 +34,7 @@ def test_signup_existing_user():
         "address": "123 Test St",
         "phone_number": "1234567890"
     })
+
     response = client.post("/signup", json={
         "username": "existinguser",
         "full_name": "Existing User",
@@ -37,10 +43,13 @@ def test_signup_existing_user():
         "address": "123 Test St",
         "phone_number": "1234567890"
     })
+
     assert response.status_code == 400
     assert response.json()["detail"] == "User already exists"
 
+
 def test_login():
+    """Tests user login."""
     client.post("/signup", json={
         "username": "loginuser",
         "full_name": "Login User",
@@ -49,19 +58,25 @@ def test_login():
         "address": "123 Test St",
         "phone_number": "1234567890"
     })
+
     response = client.post("/login", json={
         "email": "login@example.com",
         "password": "password"
     })
+
     assert response.status_code == 200
     assert "message" in response.json()
 
+
 def test_get_user_profile():
+    """Tests retrieving a user's profile."""
     response = client.get("/users/test@example.com")
     assert response.status_code == 200
     assert "email" in response.json()
 
+
 def test_update_user_profile():
+    """Tests updating a user's profile information."""
     response = client.put("/users/test@example.com", json={
         "full_name": "Updated User",
         "address": "456 New St",
@@ -70,21 +85,27 @@ def test_update_user_profile():
     assert response.status_code == 200
     assert "message" in response.json()
 
+
 # ------------------------------
 # Furniture Items Tests
 # ------------------------------
 
+
 def test_get_all_items():
+    """Tests retrieving all available furniture items."""
     response = client.get("/items")
     assert response.status_code == 200
     assert "items" in response.json()
     assert isinstance(response.json()["items"], list)
 
+
 # ------------------------------
 # Shopping Cart Tests
 # ------------------------------
 
+
 def test_add_item_to_cart():
+    """Tests adding an item to the shopping cart."""
     response = client.post("/cart/add", params={"email": "test@example.com"}, json={
         "item_id": 101,
         "quantity": 2
@@ -93,7 +114,9 @@ def test_add_item_to_cart():
     assert "message" in response.json()
     assert response.json()["message"] == "Item added to cart"
 
+
 def test_update_cart_item():
+    """Tests updating the quantity of an item in the shopping cart."""
     response = client.put("/cart/update", params={"email": "test@example.com"}, json={
         "item_id": 101,
         "quantity": 5
@@ -101,41 +124,55 @@ def test_update_cart_item():
     assert response.status_code == 200
     assert "message" in response.json()
 
+
 def test_delete_cart_item():
+    """Tests removing an item from the shopping cart."""
     response = client.delete("/cart/delete/101", params={"email": "test@example.com", "quantity": 1})
     assert response.status_code == 200
     assert "message" in response.json()
 
+
 def test_view_cart():
+    """Tests retrieving the contents of the shopping cart."""
     response = client.get("/cart/view", params={"email": "test@example.com"})
     assert response.status_code == 200
     assert "cart" in response.json()
+
 
 # ------------------------------
 # Inventory Tests
 # ------------------------------
 
+
 def test_update_inventory():
+    """Tests updating the quantity of an item in the inventory."""
     response = client.put("/inventory/update/101", params={"quantity": 50})
     assert response.status_code == 200
     assert "message" in response.json()
 
+
 def test_delete_inventory_item():
+    """Tests removing an item from the inventory."""
     response = client.delete("/inventory/delete/101")
     assert response.status_code == 200
     assert "message" in response.json()
+
 
 # ------------------------------
 # Orders Tests
 # ------------------------------
 
+
 def test_get_orders():
+    """Tests retrieving all orders for a user."""
     response = client.get("/orders", params={"email": "test@example.com"})
     assert response.status_code == 200
     assert "orders" in response.json()
 
 
 def test_checkout():
+    """Tests the checkout process."""
+
     # Step 1: Register user
     client.post("/signup", json={
         "username": "testuser",
@@ -150,7 +187,7 @@ def test_checkout():
     response_clear_cart = client.get("/cart/view", params={"email": "test@example.com"})
     cart_data = response_clear_cart.json().get("cart", {})
 
-    # If cart is not empty, remove all items
+    # Remove all items if the cart is not empty
     for item_id, quantity in cart_data.items():
         client.delete(f"/cart/delete/{item_id}", params={"email": "test@example.com", "quantity": quantity})
 
@@ -168,7 +205,7 @@ def test_checkout():
 
     # Step 4: Add the first available item to cart
     item_id, available_qty = next(iter(available_items.items()))
-    quantity_to_add = min(available_qty, 2)  # Ensure we don't exceed stock
+    quantity_to_add = min(available_qty, 2)  # Ensure stock is not exceeded
 
     response_cart = client.post("/cart/add", params={"email": "test@example.com"}, json={
         "item_id": item_id,
@@ -191,8 +228,3 @@ def test_checkout():
     assert response_checkout.status_code == 200
     assert "message" in response_checkout.json()
     assert "Order placed successfully" in response_checkout.json()["message"]
-
-
-
-
-
