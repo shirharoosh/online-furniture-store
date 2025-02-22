@@ -296,11 +296,12 @@ def checkout_api(username: str):
 # ---------------------------
 # CLI INTERFACE (Interactive Mode)
 # ---------------------------
-def initialize_inventory():
-    """Populate the inventory using predefined catalog items."""
+def initialize_inventory(catalog):
+    """Populates the inventory using predefined catalog items."""
     for item_id in catalog:
         quantity = 10
         inventory.add_item(item_id, quantity)
+    inventory.set_catalog(catalog)
     print("Inventory initialized:")
     print(inventory)
 
@@ -376,7 +377,9 @@ def user_interface(user):
             if item_id not in catalog:
                 print("Error: Invalid item ID.")
                 continue
-            cart.add_furniture(catalog, item_id, quantity)
+
+            cart.add_furniture(item_id, quantity)
+
         elif choice == "2":
             try:
                 item_id = int(input("Enter item ID: ").strip())
@@ -384,7 +387,7 @@ def user_interface(user):
             except ValueError:
                 print("Invalid input. Please enter numeric values.")
                 continue
-            cart.remove_furniture(catalog, item_id, quantity)
+            cart.remove_furniture(item_id, quantity)
         elif choice == "3":
             print("Current Cart:", cart)
         elif choice == "4":
@@ -421,7 +424,7 @@ def checkout_cli(user, cart):
 
 def main():
     """CLI main function to initialize the application and start interactive mode."""
-    initialize_inventory()
+    initialize_inventory(catalog)
     initialize_users()
     while True:
         print("\nWelcome to the Online Furniture Store!")

@@ -28,4 +28,10 @@ class UserOrderDictionary:
         """
         Returns a list of orders associated with the given user.
         """
-        return self._user_orders.get(user.username, [])
+        return list(self._user_orders.get(user.username, []))
+
+    def clear_user_orders(self, user) -> None:
+        """
+        Clears all orders associated with the given user, leaving empty list
+        """
+        self._user_orders[user.username] = []

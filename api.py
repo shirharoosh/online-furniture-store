@@ -36,7 +36,7 @@ catalog: Dict[int, StoreItem] = {
 for item_id in catalog:
     inventory.add_item(item_id, 10)
     print(f"DEBUG: Added item_id {item_id} with quantity 10 to inventory.")
-
+inventory.set_catalog(catalog) # setting catalog as required in the updated inv
 # Create a global shopping cart instance linked to the inventory.
 shopping_cart = ShoppingCart(inventory)
 
@@ -104,7 +104,7 @@ def get_items(name: Optional[str] = None, category: Optional[str] = None,
     print("DEBUG: GET /items called with filters:",
           f"name={name}, category={category}, min_price={min_price}, max_price={max_price}")
     # Use the Inventory.search_items() to filter available items.
-    matching_items = inventory.search_items(list(catalog.values()), name, category, min_price, max_price)
+    matching_items = inventory.search_items(name, category, min_price, max_price)
     items_list = []
     for item in matching_items:
         items_list.append({
@@ -121,9 +121,10 @@ def get_item(item_id: int):
     Retrieve details of a single item by its item_id.
     """
     print(f"DEBUG: GET /items/{item_id} called.")
-    if item_id not in catalog:
+    catalog_copy = inventory.get_catalog()
+    if item_id not in catalog_copy:
         raise HTTPException(status_code=404, detail="Item not found.")
-    item = catalog[item_id]
+    item = catalog_copy[item_id]
     return {
         "item_id": item.item_id,
         "title": item.title,
@@ -213,15 +214,17 @@ def create_order(order_data: OrderCreate):
     user = user_db[order_data.username]
     order_items = []
     total_price = 0.0
+
+    catalog_copy = inventory.get_catalog()
     # Process each order item.
     for item in order_data.items:
-        if item.item_id not in catalog:
+        if item.item_id not in catalog_copy:
             raise HTTPException(status_code=404, detail=f"Item {item.item_id} not found.")
         available_qty = inventory.get_quantity(item.item_id)
         if available_qty < item.quantity:
             raise HTTPException(status_code=400, detail=f"Not enough stock for item {item.item_id}.")
-        order_items.append((catalog[item.item_id], item.quantity))
-        total_price += catalog[item.item_id].price * item.quantity
+        order_items.append((catalog_copy[item.item_id], item.quantity))
+        total_price += catalog_copy[item.item_id].price * item.quantity
         # Update inventory: reduce the quantity.
         inventory.update_quantity(item.item_id, available_qty - item.quantity)
         print(f"DEBUG: Updated inventory for item {item.item_id}: new quantity {available_qty - item.quantity}")
@@ -237,9 +240,10 @@ def add_item_to_cart(cart_item: CartItem):
     Add an item to the shopping cart.
     """
     print(f"DEBUG: POST /cart/items called for item_id: {cart_item.item_id} with quantity {cart_item.quantity}")
-    if cart_item.item_id not in catalog:
+    catalog_copy = inventory.get_catalog()
+    if cart_item.item_id not in catalog_copy:
         raise HTTPException(status_code=404, detail="Item not found in catalog.")
-    shopping_cart.add_furniture(catalog, cart_item.item_id, cart_item.quantity)
+    shopping_cart.add_furniture(cart_item.item_id, cart_item.quantity)
     return {"message": "Item added to cart.", "cart": repr(shopping_cart)}
 
 @app.delete("/cart/items/{item_id}")
@@ -248,9 +252,10 @@ def remove_item_from_cart(item_id: int, quantity: int = 1):
     Remove an item from the shopping cart.
     """
     print(f"DEBUG: DELETE /cart/items/{item_id} called with quantity {quantity}")
-    if item_id not in catalog:
+    catalog_copy = inventory.get_catalog()
+    if item_id not in catalog_copy:
         raise HTTPException(status_code=404, detail="Item not found in catalog.")
-    shopping_cart.remove_furniture(catalog, item_id, quantity)
+    shopping_cart.remove_furniture(item_id, quantity)
     return {"message": "Item removed from cart.", "cart": repr(shopping_cart)}
 
 @app.put("/inventory/{item_id}")
@@ -296,11 +301,11 @@ def checkout(username: str):
     user = user_db[username]
     if not shopping_cart._cart_items:
         raise HTTPException(status_code=400, detail="Shopping cart is empty.")
-
+    catalog_copy = inventory.get_catalog()
     order_items = []
     total_price = shopping_cart._total_price
     for item_id, quantity in shopping_cart._cart_items.items():
-        order_items.append((catalog[item_id], quantity))
+        order_items.append((catalog_copy[item_id], quantity))
         available_qty = inventory.get_quantity(item_id)
         if available_qty < quantity:
             raise HTTPException(status_code=400, detail=f"Not enough stock for item {item_id} during checkout.")
