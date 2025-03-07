@@ -111,7 +111,7 @@ def get_items(name: Optional[str] = None, category: Optional[str] = None,
     """Retrieve a list of store items (with optional filters)."""
     print("DEBUG: GET /items called with filters:",
           f"name={name}, category={category}, min_price={min_price}, max_price={max_price}")
-    matching_items = inventory.search_items(list(catalog.values()), name, category, min_price, max_price)
+    matching_items = inventory.search_items(name, category, min_price, max_price)
     items_list = []
     for item in matching_items:
         items_list.append({
@@ -227,7 +227,7 @@ def add_item_to_cart(cart_item: CartItem):
     print(f"DEBUG: POST /cart/items called for item_id: {cart_item.item_id} with quantity {cart_item.quantity}")
     if cart_item.item_id not in catalog:
         raise HTTPException(status_code=404, detail="Item not found in catalog.")
-    shopping_cart.add_furniture(catalog, cart_item.item_id, cart_item.quantity)
+    shopping_cart.add_furniture(cart_item.item_id, cart_item.quantity)
     return {"message": "Item added to cart.", "cart": repr(shopping_cart)}
 
 @app.delete("/cart/items/{item_id}")
@@ -236,7 +236,7 @@ def remove_item_from_cart(item_id: int, quantity: int = 1):
     print(f"DEBUG: DELETE /cart/items/{item_id} called with quantity {quantity}")
     if item_id not in catalog:
         raise HTTPException(status_code=404, detail="Item not found in catalog.")
-    shopping_cart.remove_furniture(catalog, item_id, quantity)
+    shopping_cart.remove_furniture(item_id, quantity)
     return {"message": "Item removed from cart.", "cart": repr(shopping_cart)}
 
 @app.put("/inventory/{item_id}")
