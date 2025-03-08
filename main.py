@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 
-# Import our project classes.
+# Import our project modules.
 from inventory import Inventory
 from store_item import Table, Bed, Closet, Chair, Sofa, StoreItem
 from shopping_cart import ShoppingCart
@@ -19,17 +19,15 @@ from user_order_dic import UserOrderDictionary
 app = FastAPI(title="Online Furniture Store API")
 
 # Global shared resources (Simulated database)
-# Global shared resources (Simulated database)
 inventory = Inventory()  # Shared inventory across users
 shopping_cart = ShoppingCart(inventory)
 user_db: Dict[str, User] = {}  # username -> User
 orders: List[Order] = []  # List of orders
 user_order_dict = UserOrderDictionary()
 
-# ✅ Add this missing dictionary declaration:
+# Additional storage:
 user_accounts: Dict[str, User] = {}  # email -> User
 shopping_carts: Dict[str, ShoppingCart] = {}  # email -> ShoppingCart
-
 
 # Sample catalog of store items.
 catalog: Dict[int, StoreItem] = {
@@ -47,6 +45,7 @@ catalog: Dict[int, StoreItem] = {
 # Populate the inventory with a default quantity (e.g., 10 each)
 for item_id in catalog:
     inventory.add_item(item_id, 10)
+
     print(f"DEBUG: Added item_id {item_id} with quantity 10 to inventory.")
 
 # Global shopping cart instance linked to the inventory.
@@ -57,10 +56,12 @@ user_db: Dict[str, User] = {}  # username -> User
 orders: List[Order] = []         # List of orders
 user_order_dict = UserOrderDictionary()
 
+
 # --------------------------
 # Pydantic Models for Routes
 # --------------------------
 class UserRegister(BaseModel):
+    """Request model for user registration."""
     username: str
     full_name: str
     email: str
@@ -69,30 +70,37 @@ class UserRegister(BaseModel):
     phone_number: str
 
 class UserLogin(BaseModel):
+    """Request model for user login."""
     email: str
     password: str
 
 class UpdateProfile(BaseModel):
+    """Request model for updating user profile."""
     full_name: Optional[str] = None
     address: Optional[str] = None
     phone_number: Optional[str] = None
 
 class CartItem(BaseModel):
+    """Request model for adding/removing items from the cart."""
     item_id: int
     quantity: int
 
 class InventoryUpdate(BaseModel):
+    """Request model for updating inventory quantity."""
     quantity: int
 
 class OrderItem(BaseModel):
+    """Request model for an item in an order."""
     item_id: int
     quantity: int
 
 class OrderCreate(BaseModel):
+    """Request model for creating a new order."""
     username: str
     items: List[OrderItem]
 
 class Discount(BaseModel):
+    """Request model for applying a discount to the shopping cart."""
     discount_percentage: float
 
 # ---------------------------
@@ -102,15 +110,29 @@ class Discount(BaseModel):
 @app.get("/")
 def read_root():
     """Root endpoint for debugging."""
+    
     print("DEBUG: Root endpoint called.")
+
     return {"message": "Welcome to the Online Furniture Store API!"}
 
 @app.get("/items", response_model=List[Dict])
 def get_items(name: Optional[str] = None, category: Optional[str] = None,
               min_price: Optional[float] = None, max_price: Optional[float] = None):
-    """Retrieve a list of store items (with optional filters)."""
+    """
+    Retrieve a list of store items (with optional filters).
+
+    Query Parameters:
+        name (str, optional): Filter by item name.
+        category (str, optional): Filter by category.
+        min_price (float, optional): Minimum price filter.
+        max_price (float, optional): Maximum price filter.
+
+    Returns:
+        List[Dict]: A list of matching store items.    
+    """
     print("DEBUG: GET /items called with filters:",
           f"name={name}, category={category}, min_price={min_price}, max_price={max_price}")
+    
     matching_items = inventory.search_items(list(catalog.values()), name, category, min_price, max_price)
     items_list = []
     for item in matching_items:
@@ -124,8 +146,20 @@ def get_items(name: Optional[str] = None, category: Optional[str] = None,
 
 @app.get("/items/{item_id}", response_model=Dict)
 def get_item(item_id: int):
-    """Retrieve details of a single item by its item_id."""
+    """
+    Retrieve details of a single item by its item_id.
+
+    Path Parameters:
+        item_id (int): The unique ID of the item.
+
+    Returns:
+        Dict: Item details.
+
+    Raises:
+        HTTPException: If the item is not found.
+    """
     print(f"DEBUG: GET /items/{item_id} called.")
+
     if item_id not in catalog:
         raise HTTPException(status_code=404, detail="Item not found.")
     item = catalog[item_id]
@@ -293,6 +327,7 @@ def checkout_api(username: str):
     print("DEBUG: Shopping cart cleared after checkout.")
     return {"message": "Checkout successful.", "order": repr(new_order)}
 
+
 # ---------------------------
 # CLI INTERFACE (Interactive Mode)
 # ---------------------------
@@ -306,7 +341,7 @@ def initialize_inventory(catalog):
     print(inventory)
 
 def initialize_users():
-    global user_accounts, shopping_carts  # ✅ Ensure these are global variables
+    global user_accounts, shopping_carts  # Ensure these are global variables
 
     """Create pre-generated users."""
     pre_generated_users = [
@@ -445,6 +480,7 @@ def main():
             break
         else:
             print("Invalid choice. Please try again.")
+
 
 # ---------------------------
 # Execution: API vs. CLI Mode
