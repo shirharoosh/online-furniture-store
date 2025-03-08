@@ -36,7 +36,6 @@ catalog: Dict[int, StoreItem] = {
 # Populate the inventory with a default quantity (e.g. 10 each).
 for item_id in catalog:
     inventory.add_item(item_id, 10)
-    print(f"DEBUG: Added item_id {item_id} with quantity 10 to inventory.")
 inventory.set_catalog(catalog) # setting catalog as required in the updated inv
 
 # Create a global shopping cart instance linked to the inventory.
@@ -114,7 +113,6 @@ def read_root():
     Returns:
         dict: Welcome message.
     """
-    print("DEBUG: Root endpoint called.")
     return {"message": "Welcome to the Online Furniture Store API!"}
 
 @app.get("/items", response_model=List[Dict])
@@ -132,9 +130,6 @@ def get_items(name: Optional[str] = None, category: Optional[str] = None,
     Returns:
         List[Dict]: List of matching items.
     """
-    print("DEBUG: GET /items called with filters:",
-          f"name={name}, category={category}, min_price={min_price}, max_price={max_price}")
-    
     # Use the Inventory.search_items() to filter available items.
     matching_items = inventory.search_items(name, category, min_price, max_price)
     items_list = []
@@ -161,8 +156,6 @@ def get_item(item_id: int):
     Raises:
         HTTPException: If item is not found.
     """
-    print(f"DEBUG: GET /items/{item_id} called.")
-
     catalog_copy = inventory.get_catalog()
     if item_id not in catalog_copy:
         raise HTTPException(status_code=404, detail="Item not found.")
@@ -189,16 +182,11 @@ def register_user(user: UserRegister):
     Raises:
         HTTPException: If username already exists.
     """
-    print(f"DEBUG: POST /users/register called for username: {user.username}")
-
     if user.username in user_db:
         raise HTTPException(status_code=400, detail="Username already exists.")
     
     new_user = User(user.username, user.full_name, user.email, user.password, user.address, user.phone_number)
     user_db[user.username] = new_user
-
-    print(f"DEBUG: User {user.username} registered successfully.")
-
     return {"message": new_user.sign_up()}
 
 @app.post("/users/login", response_model=Dict[str, str])
@@ -215,17 +203,12 @@ def login_user(login: UserLogin):
     Raises:
         HTTPException: If email or password is incorrect.
     """
-    print(f"DEBUG: POST /users/login called for email: {login.email}")
-
     # Find user by email.
     user = next((u for u in user_db.values() if u.email == login.email), None)
     if user is None or not user.verify_password(login.password):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     
     result = user.login(login.email, login.password)
-
-    print(f"DEBUG: User login result: {result}")
-
     return {"message": result}
 
 @app.put("/users/{username}", response_model=Dict[str, str])
@@ -248,16 +231,11 @@ def update_user_profile(username: str, profile: UpdateProfile):
     Raises:
         HTTPException: if the user is not found.
     """
-    print(f"DEBUG: PUT /users/{username} called.")
-
     if username not in user_db:
         raise HTTPException(status_code=404, detail="User not found.")
     
     user = user_db[username]
     result = user.manage_profile(profile.full_name, profile.address, profile.phone_number)
-
-    print(f"DEBUG: Updated profile for user {username}.")
-
     return {"message": result}
 
 @app.get("/users/{username}", response_model=Dict[str, str])
@@ -277,8 +255,6 @@ def get_user_profile(username: str):
     Raises:
         HTTPException: if the user is not found.
     """
-    print(f"DEBUG: GET /users/{username} called.")
-
     if username not in user_db:
         raise HTTPException(status_code=404, detail="User not found.")
     
@@ -302,8 +278,6 @@ def get_all_orders():
             - status (str): The current status of the order (e.g., "pending", "shipped").
             - items (List[Tuple[StoreItem, int]]): List of purchased items and their quantities.
     """
-    print("DEBUG: GET /orders called.")
-
     orders_list = []
     for order in orders:
         orders_list.append({
@@ -333,8 +307,6 @@ def create_order(order_data: OrderCreate):
             - 404 if an item in the order is not found in inventory.
             - 400 if there is insufficient stock for any item.
     """
-    print(f"DEBUG: POST /orders called for user: {order_data.username}")
-
     if order_data.username not in user_db:
         raise HTTPException(status_code=404, detail="User not found.")
     
@@ -357,13 +329,10 @@ def create_order(order_data: OrderCreate):
 
         # Update inventory: reduce the quantity.
         inventory.update_quantity(item.item_id, available_qty - item.quantity)
-        print(f"DEBUG: Updated inventory for item {item.item_id}: new quantity {available_qty - item.quantity}")
-
+        
     new_order = Order(user, order_items, total_price)
     orders.append(new_order)
     user_order_dict.update(new_order)
-
-    print(f"DEBUG: Order created for user {user.username} with total price ${total_price:.2f}")
 
     return {"message": "Order created successfully.", "order": repr(new_order)}
 
@@ -384,8 +353,6 @@ def add_item_to_cart(cart_item: CartItem):
         HTTPException:
             - 404 if the item is not found in the catalog.
     """
-    print(f"DEBUG: POST /cart/items called for item_id: {cart_item.item_id} with quantity {cart_item.quantity}")
-
     catalog_copy = inventory.get_catalog()
 
     if cart_item.item_id not in catalog_copy:
@@ -412,8 +379,6 @@ def remove_item_from_cart(item_id: int, quantity: int = 1):
         HTTPException:
             - 404 if the item is not found in the catalog.
     """
-    print(f"DEBUG: DELETE /cart/items/{item_id} called with quantity {quantity}")
-
     catalog_copy = inventory.get_catalog()
 
     if item_id not in catalog_copy:
@@ -442,8 +407,6 @@ def update_inventory_item(item_id: int, inv_update: InventoryUpdate):
         HTTPException:
             - 404 if the item is not found in inventory.
     """
-    print(f"DEBUG: PUT /inventory/{item_id} called with new quantity {inv_update.quantity}")
-
     if item_id not in inventory.items:
         raise HTTPException(status_code=404, detail="Item not found in inventory.")
     
@@ -465,8 +428,6 @@ def remove_inventory_item(item_id: int):
         HTTPException:
             - 404 if the item is not found in inventory.
     """
-    print(f"DEBUG: DELETE /inventory/{item_id} called.")
-
     if item_id not in inventory.items:
         raise HTTPException(status_code=404, detail="Item not found in inventory.")
     
@@ -485,8 +446,6 @@ def apply_cart_discount(discount: Discount):
     Returns:
         Dict[str, str]: A confirmation message with the updated cart total.
     """
-    print(f"DEBUG: POST /cart/apply_discount called with discount {discount.discount_percentage}%")
-
     shopping_cart.apply_discount(discount.discount_percentage)
     return {"message": "Discount applied.", "cart": repr(shopping_cart)}
 
@@ -508,8 +467,6 @@ def checkout(username: str):
             - 400 if the shopping cart is empty.
             - 400 if stock is insufficient for any item in the cart.
     """
-    print(f"DEBUG: POST /checkout called for user: {username}")
-
     if username not in user_db:
         raise HTTPException(status_code=404, detail="User not found.")
     
@@ -528,18 +485,12 @@ def checkout(username: str):
         
         inventory.update_quantity(item_id, available_qty - quantity)
 
-        print(f"DEBUG: Checkout - updated inventory for item {item_id}: new quantity {available_qty - quantity}")
-
     new_order = Order(user, order_items, total_price)
     orders.append(new_order)
     user_order_dict.update(new_order)
-
-    print(f"DEBUG: Checkout complete for user {username} with order total ${total_price:.2f}")
-
     # Clear the shopping cart.
     shopping_cart._cart_items.clear()
     shopping_cart._total_price = 0.0
-    print("DEBUG: Shopping cart cleared after checkout.")
     return {"message": "Checkout successful.", "order": repr(new_order)}
 
 # ---------------------------
