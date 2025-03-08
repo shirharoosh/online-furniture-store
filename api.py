@@ -329,7 +329,7 @@ def create_order(order_data: OrderCreate):
 
         # Update inventory: reduce the quantity.
         inventory.update_quantity(item.item_id, available_qty - item.quantity)
-        
+
     new_order = Order(user, order_items, total_price)
     orders.append(new_order)
     user_order_dict.update(new_order)
