@@ -1,5 +1,6 @@
 # 🛋️ Online Furniture Store API & CLI
 ## A Complete E-Commerce System with FastAPI & CLI Mode
+# Group Members: Gal Greenwald, Shir Harouche, Elie Hallermaier, Yonatan Samuel
 
 📌 **This project provides a fully functional RESTful API and an interactive CLI for managing an online furniture store.**  
 
