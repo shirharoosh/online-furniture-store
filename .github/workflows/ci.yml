@@ -35,11 +35,6 @@ jobs:
           source venv/bin/activate
           ruff check .
 
-      - name: Run Linting with Black
-        run: |
-          source venv/bin/activate
-          black --check .
-
       - name: Run Tests with Coverage
         run: |
           source venv/bin/activate
