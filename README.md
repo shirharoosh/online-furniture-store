@@ -211,8 +211,9 @@ Obtaining an Observer Pattern.
 │── requirements.txt    # Dependencies
 │── README.md           # Documentation
 │── .github/workflows/  # GitHub Actions CI/CD
+    │── ci.yml
 │
-└── tests/              # 📂 Unit and Integration Tests
+└── tests/             # 📂 Unit and Integration Tests
     │── test_api.py
     │── test_inventory.py
     │── test_main.py
