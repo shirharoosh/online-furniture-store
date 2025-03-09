@@ -1,3 +1,4 @@
+import pytest
 from shopping_cart import ShoppingCart
 from inventory import Inventory
 from store_item import Table, Chair, Closet
