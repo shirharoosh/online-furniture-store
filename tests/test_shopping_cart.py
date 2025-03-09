@@ -1,6 +1,6 @@
 from shopping_cart import ShoppingCart
 from inventory import Inventory
-from store_item import StoreItem, Table, Chair, Closet
+from store_item import Table, Chair, Closet
 
 @pytest.fixture
 def setup_cart():
