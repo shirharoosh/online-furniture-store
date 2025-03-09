@@ -1,0 +1,52 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-lint:
+    name: Run Tests & Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov black ruff
+
+      - name: Run Linting with Ruff
+        run: |
+          source venv/bin/activate
+          ruff check .
+
+      - name: Run Linting with Black
+        run: |
+          source venv/bin/activate
+          black --check .
+
+      - name: Run Tests with Coverage
+        run: |
+          source venv/bin/activate
+          pytest --cov=. --cov-report=xml --cov-report=term
+
+      - name: Upload Coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.xml
