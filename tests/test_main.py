@@ -15,7 +15,6 @@ from main import (
     catalog
 )
 from shopping_cart import ShoppingCart
-from inventory import Inventory
 from store_item import Table, Chair, Closet
 
 @pytest.fixture

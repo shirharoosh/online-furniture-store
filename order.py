@@ -14,7 +14,7 @@ class Order:
         _status (str): The current status of the order (default is "pending").
     """
 
-    def __init__(self, user: User, items: list[StoreItem], total_price: float, status: str = "pending") -> None:
+    def __init__(self, user: User, items: List[StoreItem], total_price: float, status: str = "pending") -> None:
         """
         Initializes an Order instance.
 

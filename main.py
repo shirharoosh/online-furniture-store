@@ -1,7 +1,6 @@
 import sys
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 
@@ -425,7 +424,7 @@ def checkout_cli(user, cart):
     order = Order(user, list(cart._cart_items.keys()), cart._total_price, status="Pending")
     user_order_dict.update(order)
     shopping_carts[user.email] = ShoppingCart(inventory)
-    print(f"\nOrder placed successfully for {user.username}!\nOrder Details: {order}")
+    print(f"\nOrder placed successfully for {user.username}!\nOrder Details: {order}\n Shipping Address: {shipping_address}")
     print("Thank you for shopping with us!\n")
 
 def main():
