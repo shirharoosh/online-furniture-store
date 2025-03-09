@@ -2,8 +2,6 @@ import pytest
 from fastapi.testclient import TestClient
 from api import app, inventory, user_db, shopping_cart, user_order_dict
 from store_item import Table, Chair, Closet
-from user import User
-from shopping_cart import ShoppingCart
 
 # -----------------
 # Test Fixtures

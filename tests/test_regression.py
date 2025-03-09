@@ -1,10 +1,6 @@
 import pytest
-from unittest.mock import patch
 from api import app, inventory, shopping_cart, user_db, orders, user_order_dict
-from store_item import Table, Bed, Closet, Chair, Sofa
-from shopping_cart import ShoppingCart
-from user import User
-from order import Order
+from store_item import Table, Closet, Chair
 from fastapi.testclient import TestClient
 
 client = TestClient(app)
