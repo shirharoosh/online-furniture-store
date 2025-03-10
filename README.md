@@ -200,6 +200,7 @@ Obtaining an Observer Pattern.
 ## 📂 **Project Structure**
 ```bash
 /online-furniture-store
+│── Design - Final.pdf  # Design Architechture
 │── inventory.py        # Manages inventory
 │── store_item.py       # Furniture classes (Table, Chair, etc.)
 │── shopping_cart.py    # Handles shopping cart logic
