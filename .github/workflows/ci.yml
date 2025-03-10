@@ -38,4 +38,13 @@ jobs:
       - name: Run Tests with Coverage
         run: |
           source venv/bin/activate
-          pytest --cov=. --cov-report=xml --cov-report=term
+          pytest --cov=. --cov-report=term-missing --cov-fail-under=80
+
+      - name: Generate coverage report
+        run: pytest --cov=. --cov-report=html
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: htmlcov/
