@@ -7,6 +7,11 @@ from store_item import Table, Bed, Closet, Chair, Sofa
 def sample_inventory():
     """Creates a sample inventory with predefined stock levels."""
     inventory = Inventory()
+
+    # Reset inventory state
+    inventory._items.clear()
+    inventory.set_catalog(None)
+    
     catalog = {
         1: Table(1, "Dining Table", 150.0, 75, 120, 50.0, "A wooden dining table"),
         2: Bed(2, "King Bed", 300.0, 60, 80, 70.0, "A king-sized bed", pillow_count=4),

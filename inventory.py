@@ -4,19 +4,24 @@ from store_item import StoreItem
 
 class Inventory:
     """
-    Manages the store's inventory using a dictionary mapping item ID's to quantity.
+    A global instance managing the store's inventory using a dictionary mapping item ID's to quantity. 
+    Follows a singleton pattern to ensure a single instance throghout the program.
 
     Attributes:
         _items (Dict[int, int]): Dictionary mapping item IDs to their stock quantity.
         _catalog (Optional[Dict[int, StoreItem]]): Reference to the store catalog (maps item_id to StoreItem objects).
     """
+    _instance = None  # Holds the single instance
 
-    def __init__(self) -> None:
+    def __new__(cls) -> None:
         """
-        Initializes an empty inventory.
+        Ensures only one instance of Inventory exists.
         """
-        self._items: Dict[int, int] = {}  # Maps item_id to stock quantity.
-        self._catalog: Optional[Dict[int, StoreItem]] = None # Reference to catalog
+        if cls._instance is None:
+            cls._instance = super(Inventory, cls).__new__(cls)
+            cls._instance._items = {}  # Maps item_id to stock quantity.
+            cls._instance._catalog = None  # Reference to catalog
+        return cls._instance
 
     def set_catalog(self, catalog: Dict[int, StoreItem]) -> None:
         """

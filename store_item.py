@@ -247,3 +247,37 @@ class Sofa(StoreItem):
             str: A formatted string with the sofa's details.
         """
         return super().__repr__() + f", seating_capacity={self._seating_capacity}"
+    
+
+class StoreItemFactory:
+    """
+    Factory class for creating different types of furniture items dynamically.
+    """
+    _item_classes = {
+        "Table": Table,
+        "Bed": Bed,
+        "Closet": Closet,
+        "Chair": Chair,
+        "Sofa": Sofa
+    }
+    
+    @staticmethod
+    def create_item(item_type: str, *args, **kwargs) -> StoreItem:
+        """
+        Creates a StoreItem instance based on the provided item type.
+
+        Args:
+            item_type (str): The type of furniture (e.g., "Table", "Chair").
+            *args: Positional arguments for the item's constructor.
+            **kwargs: Keyword arguments for the item's constructor.
+
+        Returns:
+            StoreItem: An instance of the requested furniture type.
+
+        Raises:
+            ValueError: If the item_type is not recognized.
+        """
+        if item_type not in StoreItemFactory._item_classes:
+            raise ValueError(f"Invalid item type: {item_type}")
+        
+        return StoreItemFactory._item_classes[item_type](*args, **kwargs)
