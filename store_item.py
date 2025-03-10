@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Any
 
 class StoreItem(ABC):
@@ -76,14 +76,15 @@ class StoreItem(ABC):
         """
         return self._description
 
+    @abstractmethod
     def get_description(self) -> str:
         """
-        Retrieves the description of the item.
+        Abstract method to be implemented in subclasses.
 
         Returns:
-            str: The item's description.
+            a detailed description of the store item.
         """
-        return self._description
+        pass
 
     def apply_discount(self, discount: float) -> float:
         """
@@ -116,7 +117,8 @@ class Table(StoreItem):
     """
     Represents a table in the store.
     """
-    pass
+    def get_description(self) -> str:
+        return f"{self.title}: A sturdy table priced at ${self.price:.2f}. {self.description}"
 
 class Bed(StoreItem):
     """
@@ -136,6 +138,9 @@ class Bed(StoreItem):
         """
         super().__init__(*args, **kwargs)
         self._pillow_count = pillow_count
+
+    def get_description(self) -> str:
+        return f"{self.title}: A comfortable bed with {self._pillow_count} pillows, priced at ${self.price:.2f}. {self.description}"
 
     def __repr__(self) -> str:
         """
@@ -166,6 +171,10 @@ class Closet(StoreItem):
         super().__init__(*args, **kwargs)
         self._with_mirror = with_mirror
 
+    def get_description(self) -> str:
+        mirror_text = "with a mirror" if self._with_mirror else "without a mirror"
+        return f"{self.title}: A spacious closet {mirror_text}, priced at ${self.price:.2f}. {self.description}"
+
     def __repr__(self) -> str:
         """
         Returns a string representation of the closet.
@@ -195,6 +204,9 @@ class Chair(StoreItem):
         super().__init__(*args, **kwargs)
         self._material = material
 
+    def get_description(self) -> str:
+        return f"{self.title}: A {self._material} chair, priced at ${self.price:.2f}. {self.description}"
+    
     def __repr__(self) -> str:
         """
         Returns a string representation of the chair.
@@ -223,6 +235,9 @@ class Sofa(StoreItem):
         """
         super().__init__(*args, **kwargs)
         self._seating_capacity = seating_capacity
+
+    def get_description(self) -> str:
+        return f"{self.title}: A spacious sofa with seating for {self._seating_capacity} people, priced at ${self.price:.2f}. {self.description}"
 
     def __repr__(self) -> str:
         """

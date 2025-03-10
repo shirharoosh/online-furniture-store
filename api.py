@@ -411,7 +411,7 @@ def update_inventory_item(item_id: int, inv_update: InventoryUpdate):
         raise HTTPException(status_code=404, detail="Item not found in inventory.")
     
     inventory.update_quantity(item_id, inv_update.quantity)
-    return {"message": "Inventory updated.", "inventory": inventory.items}
+    return {"message": "Inventory updated.", "inventory": str(inventory.items)}
 
 @app.delete("/inventory/{item_id}", response_model=Dict[str, str])
 def remove_inventory_item(item_id: int):
@@ -432,7 +432,7 @@ def remove_inventory_item(item_id: int):
         raise HTTPException(status_code=404, detail="Item not found in inventory.")
     
     inventory.remove_item(item_id)
-    return {"message": "Item removed from inventory.", "inventory": inventory.items}
+    return {"message": "Item removed from inventory.", "inventory": str(inventory.items)}
 
 @app.post("/cart/apply_discount", response_model=Dict[str, str])
 def apply_cart_discount(discount: Discount):

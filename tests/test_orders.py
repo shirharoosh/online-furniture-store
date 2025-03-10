@@ -51,7 +51,8 @@ def sample_orders():
     ],
 )
 
-def test_initialization(user, items, total_price, status):
+def test_order_initialization(user, items, total_price, status):
+    """Tests if the Order Initializes correctly."""
     order = Order(user, items, total_price, status)
     assert order.user == user
     assert isinstance(order.items, list)
@@ -74,10 +75,19 @@ def test_status_update(sample_orders):
     assert sample_orders[3].status == "canceled"
 
 def test_invalid_status_update(sample_orders):
-    """Ensures updating to an invalid status doesn't break"""
+    """Tests if updating to an invalid status doesn't break functionality"""
     invalid_status = "nonexistent_status"
     sample_orders[0].update_status(invalid_status)
     assert sample_orders[0].status == invalid_status  # Assuming no validation in `update_status`
+
+def test_total_price_calculation():
+    """Ensures the total price matches the sum of item prices."""
+    items = [
+        Table(1, "Dining Table", 150.0, 75, 120, 50.0, "A wooden dining table"),
+        Bed(2, "King Bed", 300.0, 60, 80, 70.0, "A king-sized bed", pillow_count=4)
+    ]
+    order = Order("user_test", items, sum(item.price for item in items))
+    assert order.total_price == 450.0
 
 def test_repr_method(sample_orders):
     """Tests the __repr__ method of Order class"""
@@ -91,12 +101,13 @@ def test_repr_method(sample_orders):
     for order, expected in zip(sample_orders, expected_reprs):
         assert repr(order) == expected
 
-def test_empty_items():
+def test_empty_order():
     """Tests creating an order with no items"""
     empty_order = Order("test_user", [], 0.0)
     assert isinstance(empty_order.items, list)
     assert empty_order.items == []
     assert empty_order.total_price == 0.0
+    assert empty_order.status == "pending"
 
 def test_custom_status_initialization():
     """Tests initializing order with a custom status"""
