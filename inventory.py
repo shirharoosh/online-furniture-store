@@ -18,7 +18,7 @@ class Inventory:
         self._items: Dict[int, int] = {}  # Maps item_id to stock quantity.
         self._catalog: Optional[Dict[int, StoreItem]] = None # Reference to catalog
 
-    def set_catalog(self, catalog: dict[int, StoreItem]) -> None:
+    def set_catalog(self, catalog: Dict[int, StoreItem]) -> None:
         """
         Sets the catalog reference, ensuring the inventory always reflects catalog updates.
 

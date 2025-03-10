@@ -1,6 +1,7 @@
-from typing import List
-from user import User
-from store_item import StoreItem
+from typing import List, TYPE_CHECKING
+if TYPE_CHECKING:
+    from user import User
+    from store_item import StoreItem
 
 
 class Order:
@@ -14,7 +15,7 @@ class Order:
         _status (str): The current status of the order (default is "pending").
     """
 
-    def __init__(self, user: User, items: List[StoreItem], total_price: float, status: str = "pending") -> None:
+    def __init__(self, user: "User", items: List["StoreItem"], total_price: float, status: str = "pending") -> None:
         """
         Initializes an Order instance.
 
@@ -30,7 +31,7 @@ class Order:
         self._status = status
 
     @property
-    def user(self) -> User:
+    def user(self) -> "User":
         """
         Returns the user associated with the order.
 
@@ -40,7 +41,7 @@ class Order:
         return self._user
 
     @property
-    def items(self) -> list[StoreItem]:
+    def items(self) -> list["StoreItem"]:
         """
         Returns the list of items in the order.
 

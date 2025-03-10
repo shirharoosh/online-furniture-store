@@ -28,8 +28,8 @@ class User:
         self._address = address
         self._phone_number = phone_number
         self._password_hash = self._hash_password(password)
-        self._is_logged = False
-        self._order_hist = []  # List of Order objects representing the user's purchase history
+        self._is_logged: bool = False
+        self._order_hist: List[Order] = []  # List of Order objects representing the user's purchase history
 
     def _hash_password(self, password: str) -> bytes:
         """
@@ -125,7 +125,7 @@ class User:
             return "No orders found in your history."
         return self._order_hist # Returns a list of Order objects
 
-    def add_order(self, order) -> None:
+    def add_order(self, order: Order) -> None:
         """
         Adds an order to the user's order history.
 

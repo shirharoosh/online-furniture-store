@@ -104,3 +104,20 @@ def test_removing_orders_does_not_affect_user_orders(sample_user_orders, mock_us
     del order
 
     assert len(sample_user_orders.get_orders_for_user(mock_users["alice"])) == 1
+
+def test_clear_user_orders(sample_user_orders, mock_users):
+    """Tests clearing a user's order history."""
+    order1 = Order(mock_users["alice"], [], 300.0, "shipped")
+    sample_user_orders.update(order1)
+
+    sample_user_orders.clear_user_orders(mock_users["alice"])
+    assert sample_user_orders.get_orders_for_user(mock_users["alice"]) == []
+
+def test_orders_are_stored_correctly(sample_user_orders, mock_users):
+    """Ensures that user orders persist after retrieval."""
+    order1 = Order(mock_users["alice"], [], 500.0, "processing")
+    sample_user_orders.update(order1)
+
+    retrieved_orders = sample_user_orders.get_orders_for_user(mock_users["alice"])
+    assert retrieved_orders[0] is order1  # Ensure the reference is the same
+    assert retrieved_orders[0].total_price == 500.0

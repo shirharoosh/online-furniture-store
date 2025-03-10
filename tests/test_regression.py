@@ -71,5 +71,5 @@ def test_order_process_updates_all_components(reset_state):
     assert len(user_orders) == 1, "User order history should have one order."
     assert user_orders[0].total_price == 400, "User order total should match the processed order."
 
-    print("✅ Regression test passed: All components updated correctly after order processing.")
+    print("Regression test passed: All components updated correctly after order processing.")
 
