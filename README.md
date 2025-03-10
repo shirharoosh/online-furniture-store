@@ -168,11 +168,12 @@ search_items()
 
 ### 📌 StoreItem & Subclasses
 Represents different furniture items:
-Table
-Chair
-Bed
-Closet
-Sofa
+- Table
+- Chair
+- Bed
+- Closet
+- Sofa
+
 StoreItemFactory - a factory class for creating different types of furniture items.
 
 
