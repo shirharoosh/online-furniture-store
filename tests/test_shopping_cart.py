@@ -7,8 +7,14 @@ from store_item import Table, Chair, Closet
 def setup_cart():
     """
     Fixture to create an inventory and shopping cart for tests.
+    Ensures Inventory is reset before each test.
     """
     inventory = Inventory()
+
+    # Reset inventory before each test
+    inventory._items.clear()
+    inventory.set_catalog(None)
+    
     catalog = {
         1: Table(1, "Table", 200, 120, 75, 30, "Some table"),
         2: Chair(102, "Office Chair", 80, 100, 50, 10, "An ergonomic office chair.", material="Leather"),

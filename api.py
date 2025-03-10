@@ -17,7 +17,7 @@ app = FastAPI(title="Online Furniture Store API")
 # Global Instances Setup
 # ----------------------
 
-# Create an inventory instance.
+# Create an inventory instance (Global)
 inventory = Inventory()
 
 # Create a sample catalog of store items.

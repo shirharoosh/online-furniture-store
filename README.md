@@ -160,7 +160,7 @@ uvicorn main:app --reload
 ## 📂 **Class Structure & Explanation**
 
 ### 📌 Inventory
-Manages the store’s inventory with the following methods:
+Follows a singleton pattern and manages the store’s inventory with the following methods:
 add_item()
 remove_item()
 update_quantity()
@@ -173,6 +173,7 @@ Chair
 Bed
 Closet
 Sofa
+StoreItemFactory - a factory class for creating different types of furniture items.
 
 
 ### 📌 ShoppingCart
@@ -195,12 +196,28 @@ Status tracking.
 Maintains a dictionary mapping a user's username to a list of their orders.
 Obtaining an Observer Pattern.
 
+### 🛠️ Design Patterns Used in the Project
+1️⃣ Singleton Pattern - Inventory Management (used in Inventory class)
+    The Singleton Pattern ensures that only one instance of the Inventory class exists throughout the application.
+    - This allows all users and processes to access the same inventory data, preventing inconsistencies.
+    - Used in both API mode and CLI mode, ensuring a single source of truth for stock availability.
+
+2️⃣ Observer Pattern - Order Tracking (used in UserOrderDictionary class)
+    The Observer Pattern is used to keep track of user orders dynamically.
+    - Whenever a new Order is placed, it automatically updates the UserOrderDictionary, which tracks all user purchases.
+    - This makes it easy to fetch order history and maintain a real-time record of customer activity.
+
+3️⃣ Factory Pattern - Store Item Creation (implemented in store_item.py)
+    The Factory Pattern is used to create different types of furniture while keeping object creation flexible and scalable.
+    - Instead of manually instantiating different furniture objects, the system can generate them dynamically.
+    - This makes adding new furniture types to our store in the future (e.g., "Bookshelf") easier without modifying existing code.
+
 ---
 
 ## 📂 **Project Structure**
 ```bash
 /online-furniture-store
-│── Design - Final.pdf  # Design Architechture
+│── Design Architechture.pdf  # Design Architechture
 │── inventory.py        # Manages inventory
 │── store_item.py       # Furniture classes (Table, Chair, etc.)
 │── shopping_cart.py    # Handles shopping cart logic
